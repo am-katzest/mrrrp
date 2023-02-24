@@ -25,7 +25,7 @@
                 (s/join "|"
                         ["m+r*[ieao]*[ea]+[ieao]*[łwu]*[eao]*"
                          "m+r+[ieao]+[łwu]+"
-                         "m+[oae]?r*[łwu]*"
+                         "m+[oae]+r*[łwu]*"
                          "p+u*rr+"
                          "m[nmpwreaouwi]+[włu]" ; this one should get most
                          (str "r+" (at-least-one "[nmwreaouwi]" "[rea]") "[iawłu]+")
@@ -34,6 +34,7 @@
                          "m+r+i+a+p+"
                          "m+rr+"])
                 ")"))
+
 (def nyas #"(n[- ])?n+[mnyi]+a+")
 
 (def obvious-meows #"nya|mrr+p?|mraow|meow")
@@ -89,7 +90,7 @@
                  (re-seq (re-str #"\B" just-catface #"\B" "|" obvious-catfaces "|" #"\b" single-meowgex #"\b" "|" obvious-meows))
                  (map first))]
     (when (pos? (count ans))
-      (take 10 ans))))
+      ans)))
 
 (defn answer [input]
   (b/cond
@@ -108,4 +109,4 @@
     (re-pred just-catface input) [input]
     ;; dig meows
     :let [assorted-meows (dig-for-cat-stuff input)]
-    (some? assorted-meows) assorted-meows))
+    (some? assorted-meows) (take 2 (shuffle assorted-meows))))
