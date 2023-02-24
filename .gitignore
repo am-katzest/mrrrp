@@ -13,3 +13,4 @@ pom.xml.asc
 /.clj-kondo/
 /.lsp/
 /LICENSE
+/config.edn
