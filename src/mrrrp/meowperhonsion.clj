@@ -28,13 +28,13 @@
                 ")"))
 (def nyas "(n[- ])?n+[mnyi]+a+")
 (def single-meowgex (str "(" meows "|" nyas ")"))
-(def multi-meowgex (str single-meowgex "([^a-zA-Z0-9]+" single-meowgex ")*"))
+(def multi-meowgex (str single-meowgex "([^\\p{IsAlphabetic}0-9]+" single-meowgex ")*"))
 (def meowgex (str "^ *" multi-meowgex "[?!~ ]*$"))
 
 ;╻ ╻   ╻ ╻
 ;┃ ┃┃ ┃┃ ┃
 ;┗━┛┗┻┛┗━┛
-(def catface #"\s*(?i)((.)[wvo_-]\2|>?:3c?|:.|[^a-z0-9\s])\s*")
+(def catface #"(\s+|^)(?i)((.)[wvo_-]\2|>?:3c?|:.|[^\p{IsAlphabetic}0-9\s]{2,})(\s+|$)")
 
 (defn strip [x]
   (-> x
