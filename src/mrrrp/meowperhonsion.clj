@@ -76,8 +76,13 @@
 (defn extract-meows [input]
   [(strip-trailing-catface input)])
 
-(defn ^:dynamic append-catface [meow]
-  (str meow " " (rand-nth catfaces)))
+(defn ^:dynamic append-catface
+  ([meow]
+   (str meow " " (rand-nth catfaces)))
+  ([chance meow]
+   (if (> chance (rand))
+     (append-catface meow)
+     meow)))
 
 (defn dig-for-cat-stuff [x]
   (let [ans (->> (concat (re-seq single-meowgex x)
@@ -90,12 +95,12 @@
   (b/cond
     :let [s (strip-trailing-catface input)]
     ;; single meows
-    (re-pred single-meowgex input) [(append-catface input)] ; meow -> meow :3
+    (re-pred single-meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
     (re-pred single-meowgex-with-junk input) [input]        ; meow! -> meow!
     (re-pred single-meowgex s) [(append-catface s)] ; meow :3 -> meow ^w^
     (re-pred single-meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
     ;; just meows
-    (re-pred meowgex input) [(append-catface s)]
+    (re-pred meowgex input) [(append-catface 0.4 s)]
     (re-pred meowgex s) [(append-catface s)]
     ;; meows mixed with catfaces
     (and (re-seq meowgex input) (just-cat-stuff? input)) [(append-catface s)]
