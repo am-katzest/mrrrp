@@ -51,7 +51,7 @@
 
 (def catfaces ["uwu" ":3" "^w^"])
 
-(def just-catface #"(?i)((.)[wvo_-]\2|>?:3c?|:.|[^\p{L}0-9\s]{2,})")
+(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|>?:3c?|:.|uwu|owo)")
 (def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
 (def trailing-catface (re-str #"(?i) +" just-catface #"(\s*$)"))
 
@@ -109,4 +109,3 @@
     ;; dig meows
     :let [assorted-meows (dig-for-cat-stuff input)]
     (some? assorted-meows) assorted-meows))
-(answer "OwO")

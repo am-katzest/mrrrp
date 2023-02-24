@@ -12,8 +12,6 @@
 
 (def bot-id (atom nil))
 
-(def config (edn/read-string (slurp "config.edn")))
-
 (defmulti handle-event (fn [type _data] type))
 (def gayboy-id  "204255221017214977")
 (defmethod handle-event :message-create
@@ -41,11 +39,12 @@
   (discord-rest/stop-connection! rest)
   (discord-ws/disconnect-bot! gateway)
   (close! events))
+
 (defn  kill-bot! [{:keys [rest gateway events] :as _state}]
   (discord-ws/disconnect-bot! gateway))
 
 (defn -main [& args]
-  (reset! state (start-bot! (:token config) :guild-messages))
+  (reset! state (start-bot! (System/getenv "MEOWKEN") :guild-messages))
   (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
   (future (try
             (message-pump! (:events @state) handle-event)
