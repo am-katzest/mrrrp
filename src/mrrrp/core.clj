@@ -22,8 +22,7 @@
     :when (not= @bot-id (:id author))
     :when-let [answer (c/answer content)]
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
-    (seq answer) (doseq [ans answer] (reply ans))
-    (reply answer)))
+    (doseq [ans answer] (reply ans))))
 
 (defmethod handle-event :ready
   [_ _]
