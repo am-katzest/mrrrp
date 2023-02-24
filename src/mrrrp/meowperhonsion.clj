@@ -69,43 +69,12 @@
 (defn ^:dynamic append-catface [meow]
   (str meow " " (rand-nth catfaces)))
 
-(append-catface "meow")
-
 (defn answer [input]
   (b/cond
     :let [s (strip-trailing-catface input)]
-    (single-meow? s) [(append-catface input)]))
-
-(def catfaces ["uwu" ":3" "!!"])
-
-(def just-catface #"(?i)((.)[wvo_-]\2|>?:3c?|:.|[^\p{L}0-9\s]{2,})")
-(def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
-(def trailing-catface (re-str #"(?i) +" just-catface #"(\s*$)"))
-
-(defn strip [x]
-  (-> x
-      (s/replace  catface " ")
-      (s/replace #"^\s*" "")
-      (s/replace #"\s*$" "")))
-
-(defn strip-trailing-catface [x]
-  (-> x
-      (s/replace  trailing-catface " ")
-      (s/replace #"^\s*" "")
-      (s/replace #"\s*$" "")))
-
-(defn extract-meows [input]
-  [(strip-trailing-catface input)])
-
-(defn ^:dynamic append-catface [meow]
-  (str meow " " (rand-nth catfaces)))
-
-(defn answer [input]
-  (b/cond
-    :let [s (strip-trailing-catface input)]
-    :do (prn s)
     (re-pred single-meowgex input) [(append-catface input)] ; meow -> meow :3
     (re-pred single-meowgex-with-junk input) [input]        ; meow! -> meow!
-    (re-pred single-meowgex s) [(append-catface s)]         ; meow :3 -> meow ^w^
+    (re-pred single-meowgex s) [(append-catface s)] ; meow :3 -> meow ^w^
+    (re-pred single-meowgex-with-junk s) [(append-catface s)]        ; meow! :3 -> meow!
     ))
-(re-pred single-meowgex "mrrpreow")
+(answer "meow!!!~ :3")
