@@ -85,8 +85,8 @@
      meow)))
 
 (defn dig-for-cat-stuff [x]
-  (let [ans (->> (concat (re-seq single-meowgex x)
-                         (re-seq  just-catface x))
+  (let [ans (->> (concat (re-seq (re-str #"\b" single-meowgex #"\b" "|" obvious-meows) x)
+                         (re-seq (re-str #"\B" just-catface #"\B" "|" obvious-catfaces) x))
                  (map first))]
     (when (pos? (count ans))
       (take 10 ans))))
@@ -109,3 +109,4 @@
     ;; dig meows
     :let [assorted-meows (dig-for-cat-stuff input)]
     (some? assorted-meows) assorted-meows))
+(dig-for-cat-stuff "word mriew meowing:3 ^w^ more eveline :3")
