@@ -20,13 +20,11 @@
   [_ {:keys [channel-id content author] :as _data}]
   (b/cond
     :when (not= @bot-id (:id author))
+    (= content "-stop-") (throw (ex-info "stop" {}))
     :when-let [answer (c/answer content)]
+    :do (prn content "->" answer)
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
     (doseq [ans answer] (reply ans))))
-
-(defmethod handle-event :ready
-  [_ _]
-  (discord-ws/status-update! (:gateway @state) :activity (discord-ws/create-activity :name (:playing config))))
 
 (defmethod handle-event :default [_ _])
 
@@ -42,6 +40,8 @@
   (discord-rest/stop-connection! rest)
   (discord-ws/disconnect-bot! gateway)
   (close! events))
+(defn  kill-bot! [{:keys [rest gateway events] :as _state}]
+  (discord-ws/disconnect-bot! gateway))
 
 (defn -main [& args]
   (reset! state (start-bot! (:token config) :guild-messages))
@@ -51,4 +51,4 @@
             (finally (stop-bot! @state)))))
 (comment
   (-main)
-  (stop-bot! @state))
+  (kill-bot! @state))
