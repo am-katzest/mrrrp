@@ -43,8 +43,21 @@
 (defn  kill-bot! [{:keys [rest gateway events] :as _state}]
   (discord-ws/disconnect-bot! gateway))
 
+(defmacro exp->some [& exprs]
+  `(try ~@exprs
+        (catch Throwable ~(gensym) nil)))
+
+(defn get-token []
+  (->> (or (exp->some (slurp "MEOWKEN"))
+           (System/getenv "MEOWKEN")
+           (do
+             (println "enter token!")
+             (read-line)))
+       (remove #{\newline})
+       (reduce str)))
+
 (defn -main [& args]
-  (reset! state (start-bot! (System/getenv "MEOWKEN") :guild-messages))
+  (reset! state (start-bot! (get-token) :guild-messages))
   (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
   (future (try
             (message-pump! (:events @state) handle-event)
