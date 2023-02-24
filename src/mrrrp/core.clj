@@ -15,11 +15,12 @@
 (def config (edn/read-string (slurp "config.edn")))
 
 (defmulti handle-event (fn [type _data] type))
-
+(def gayboy-id  "204255221017214977")
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author] :as _data}]
   (b/cond
     :when (not= @bot-id (:id author))
+    :when (or (not= gayboy-id (:id author)) (rand-nth [true false false]))
     (= content "-stop-") (throw (ex-info "stop" {}))
     :when-let [answer (c/answer content)]
     :do (prn content "->" answer)
