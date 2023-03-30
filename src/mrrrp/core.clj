@@ -6,14 +6,15 @@
             [mrrrp.meowperhonsion :as c]
             [better-cond.core :as b]
             [discljord.formatting :refer [mention-user]]
-            [discljord.events :refer [message-pump!]]))
-
+            [discljord.events :refer [message-pump!]])
+  (:gen-class))
 (def state (atom nil))
 
 (def bot-id (atom nil))
 
 (defmulti handle-event (fn [type _data] type))
 (def gayboy-id  "204255221017214977")
+
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author] :as _data}]
   (b/cond
