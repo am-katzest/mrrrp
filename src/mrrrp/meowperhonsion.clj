@@ -23,15 +23,16 @@
 (def meows (str "(m[- ])?"
                 "("
                 (s/join "|"
-                        ["m+r*[ieao]*[ea]+[ieao]*[łwu]*[eao]*"
+                        ["m+r*[yieao]*[ea]+[ieao]*[łwu]*[eao]*"
                          "m+r+[ieao]+[łwu]+"
                          "m+[oae]+r*[łwu]*"
                          "p+u*rr+"
-                         "m[nmpwreaouwi]+[włu]" ; this one should get most
+                         "m[ynmpwreaouwi]+[włu]" ; this one should get most
                          (str "r+" (at-least-one "[nmwreaouwi]" "[rea]") "[iawłu]+")
                          "m+r+p+"
                          "m+r+a+"
                          "m+r+i+a+p+"
+                         "m+y*a+o*w*"
                          "m+rr+"])
                 ")"))
 
@@ -112,9 +113,13 @@
      :let [assorted-meows (dig-for-cat-stuff input)]
      (some? assorted-meows) (take 2 (shuffle assorted-meows)))
    (remove #{":s" "me"})))
+
 (defn wrong-answer [x]
-  (let [ans [(answer x)]]
-    (when (and ans (not (empty? ans)))
-      (if (> 1/300 (rand))
-        ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"]
+  (let [ans (answer x)]
+    (when (and ans (seq ans) (< 0 (count ans)))
+      (if (> 1/90 (rand))
+        (do
+          (Thread/sleep 2000)
+          ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
         ans))))
+(wrong-answer "meow")

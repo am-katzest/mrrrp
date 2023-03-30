@@ -17,11 +17,11 @@
 
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author] :as _data}]
+  (println channel-id content author)
   (b/cond
     :when (not= @bot-id (:id author))
     :when (or (not= gayboy-id (:id author)) (rand-nth [true false false]))
-    (= content "-stop-") (throw (ex-info "stop" {}))
-    :when-let [answer (c/answer content)]
+    :when-let [answer (c/wrong-answer content)]
     :do (prn content "->" answer)
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
     (doseq [ans answer] (reply ans))))
@@ -63,6 +63,7 @@
   (future (try
             (message-pump! (:events @state) handle-event)
             (finally (stop-bot! @state)))))
+
 (comment
   (-main)
   (kill-bot! @state))
