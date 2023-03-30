@@ -39,7 +39,7 @@
 (def nyas #"(n[- ])?n+[mnyi]+a+")
 
 (def obvious-meows #"nya|mrr+p?|mraow|meow")
-(def obvious-catfaces #"uwu|owo|:3|^w^")
+(def obvious-catfaces #"uwu|owo|:3|^w^|B3")
 
 (def junk #"[^\p{L}0-9]")
 (def single-meowgex (re-str "(?i)(" meows "|" nyas ")"))
@@ -51,7 +51,7 @@
                                         ;┃ ┃┃ ┃┃ ┃
                                         ;┗━┛┗┻┛┗━┛
 
-(def catfaces ["uwu" ":3" "^w^"])
+(def catfaces ["uwu" ":3" "^w^" "UwU"])
 
 (def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|>?:3c?|:.|uwu|owo)")
 (def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
@@ -88,7 +88,7 @@
 
 (defn dig-for-cat-stuff [x]
   (let [ans (->> x
-                 (re-seq (re-str #"\B" just-catface #"\B" "|" obvious-catfaces "|" #"\b" single-meowgex #"\b" "|" obvious-meows))
+                 (re-seq (re-str #"\b" just-catface #"\b" "|" obvious-catfaces "|" #"\b" single-meowgex #"\b" "|" obvious-meows))
                  (map first))]
     (when (pos? (count ans))
       ans)))
@@ -112,7 +112,7 @@
      ;; dig meows
      :let [assorted-meows (dig-for-cat-stuff input)]
      (some? assorted-meows) (take 2 (shuffle assorted-meows)))
-   (remove #{":s" "me"})))
+   (remove #(#{":s" "me" "ma"} (s/lower-case %)))))
 
 (defn wrong-answer [x]
   (let [ans (answer x)]
@@ -122,4 +122,3 @@
           (Thread/sleep 2000)
           ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
         ans))))
-(wrong-answer "meow")
