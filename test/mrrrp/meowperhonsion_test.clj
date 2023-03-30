@@ -27,4 +27,10 @@
       "randomword:3" [":3"]
       "unwanted:pattention" []
       "<:patpat:1089585540388626502>" []
-      ":p" [":p"])))
+      ":p" [":p"]))
+  (deftest it-behaves
+    (are [in out] (= [in out]
+                     [in (answer in)])
+      "coś ma" []
+      "hey Ma!" []
+      "touch me" [])))
