@@ -17,7 +17,6 @@
 
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author] :as _data}]
-  (println channel-id content author)
   (b/cond
     :when (not= @bot-id (:id author))
     :when (or (not= gayboy-id (:id author)) (rand-nth [true false false]))
