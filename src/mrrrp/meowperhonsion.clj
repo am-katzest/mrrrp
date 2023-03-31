@@ -111,7 +111,7 @@
      (re-pred just-catface input) [input]
      ;; dig meows
      :let [assorted-meows (dig-for-cat-stuff input)]
-     (some? assorted-meows) (take 2 (shuffle assorted-meows)))
+     (some? assorted-meows) (take 1 (shuffle assorted-meows)))
    (remove #(#{":s" "me" "ma"} (s/lower-case %)))))
 
 (defn wrong-answer [x]
