@@ -14,12 +14,16 @@
 
 (defmulti handle-event (fn [type _data] type))
 (def gayboy-id  "204255221017214977")
+(def blacklist (atom #{}))
 
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author] :as _data}]
   (b/cond
+    (= content "stop meowing") (swap! blacklist conj channel-id)
+    (= content "start meowing") (swap! blacklist disj channel-id)
+    :when (not (@blacklist channel-id))
     :when (not= @bot-id (:id author))
-    :when (or (not= gayboy-id (:id author)) (rand-nth [true false false]))
+    :when (or (not= gayboy-id (:id author)) (rand-nth [true false false false]))
     :when-let [answer (c/wrong-answer content)]
     :do (prn content "->" answer)
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]

@@ -23,30 +23,31 @@
 (def meows (str "(m[- ])?"
                 "("
                 (s/join "|"
-                        ["m+r*[yieao]*[ea]+[ieao]*[łwu]*[eao]*"
+                        ["m+r*[yieao]*[ea]+[ieao]+[łwu]*[eao]*"
                          "m+r+[ieao]+[łwu]+"
-                         "m+[oae]+r*[łwu]*"
-                         "p+u*rr+"
+                         "m+[oae]+r+[łwu]*"
+                         "m+[oae]+r*[łwu]+"
+                         '"p+u*rr+"
                          "m[ynmpwreaouwi]+[włu]" ; this one should get most
                          (str "r+" (at-least-one "[nmwreaouwi]" "[rea]") "[iawłu]+")
                          "m+r+p+"
                          "m+r+a+"
                          "m+r+i+a+p+"
-                         "m+y*a+o*w*"
+                         "m+y*a+o*w+"
+                         "m+y*a+o+w*"
+                         "m+y+a+o+w*"
                          "m+rr+"])
                 ")"))
-
 (def nyas #"(n[- ])?n+[mnyi]+a+")
 (def  woofss (str #"([wa][- ])" (s/join "|"
                                         ["w+o+[ao]+f*"
-                                         "a+w+(u+o+)f*"
+                                         "a+w+(u+|o+)f*"
                                          "[ar]*w+r*(u+|o+)f+"
                                          "a+r+f+"
                                          "r+(o+|u+)f+"
                                          "p+(a+|o+)r*"
                                          "p+(o+|a+)r*"
                                          "b+a+r+kf*"])))
-
 (def obvious-meows #"nya|mrr+p?|mraow|meow")
 (def obvious-catfaces #"uwu|owo|:3|^w^|B3")
 
