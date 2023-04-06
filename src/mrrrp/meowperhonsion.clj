@@ -30,37 +30,42 @@
                          '"p+u*rr+"
                          "m[ynmpwreaouwi]+[włu]" ; this one should get most
                          (str "r+" (at-least-one "[nmwreaouwi]" "[rea]") "[iawłu]+")
-                         "m+r+p+"
-                         "m+r+a+"
+                         "m+r+(p+|e+|a+)"
                          "m+r+i+a+p+"
                          "m+y*a+o*w+"
                          "m+y*a+o+w*"
                          "m+y+a+o+w*"
                          "m+rr+"])
                 ")"))
+
 (def nyas #"(n[- ])?n+[mnyi]+a+")
-(def  woofss (str #"([wa][- ])" (s/join "|"
-                                        ["w+o+[ao]+f*"
-                                         "a+w+(u+|o+)f*"
-                                         "[ar]*w+r*(u+|o+)f+"
-                                         "a+r+f+"
-                                         "r+(o+|u+)f+"
-                                         "p+(a+|o+)r*"
-                                         "p+(o+|a+)r*"
-                                         "bj*+a+r+kf*"
-                                         "bj*+o+r+kf*"])))
+
+(def  woofs (str #"([wa][- ])" (s/join "|"
+                                       ["w+o+[ao]+f*"
+                                        "a+w+(u+|o+)f*"
+                                        "[ar]*w+r*(u+|o+)f+"
+                                        "a+r+f+"
+                                        "r+(o+|u+)f+"
+                                        "p+(a+|o+)r*"
+                                        "p+(o+|a+)r*"
+                                        "bj*+a+r+kf*"
+                                        "bj*+o+r+kf*"])))
+
 (def obvious-meows #"nya|mrr+p?|mraow|meow")
 (def obvious-catfaces #"uwu|owo|:3|^w^|B3")
 
 (def junk #"[^\p{L}0-9]")
-(def single-woofgex (re-str "(?i)(" woofss ")"))
+(def single-woofgex (re-str "(?i)(" woofs ")"))
 (def single-meowgex (re-str "(?i)(" meows "|" nyas ")"))
-(def single-meowgex-with-junk (re-str junk "*" single-meowgex junk "*"))
-(def single-woofgex-with-junk (re-str junk "*" single-woofgex junk "*"))
-(def multi-meowgex (re-str single-meowgex "(" junk "+" single-meowgex ")*"))
-(def multi-woofgex (re-str single-woofgex "(" junk "+" single-woofgex ")*"))
-(def meowgex (re-str "^ *" multi-meowgex "[?!~ ]*$"))
-(def  woofgex (re-str "^ *" multi-woofgex "[?!~ ]*$"))
+(defn tolerate-junk [re] (re-str junk "*" re junk "*"))
+(def single-meowgex-with-junk (tolerate-junk single-meowgex))
+
+(def single-woofgex-with-junk (tolerate-junk single-woofgex))
+
+(defn multi [re] (re-str "^ *"  re "(" junk "+" re ")*"  "[?!~ ]*$"))
+
+(def meowgex (multi single-meowgex))
+(def woofgex (multi single-woofgex))
 
                                         ;╻ ╻   ╻ ╻
                                         ;┃ ┃┃ ┃┃ ┃
