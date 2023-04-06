@@ -5,6 +5,7 @@
             [discljord.connections :as discord-ws]
             [mrrrp.meowperhonsion :as c]
             [better-cond.core :as b]
+            [mrrrp.slowdown :as slow]
             [discljord.formatting :refer [mention-user]]
             [discljord.events :refer [message-pump!]])
   (:gen-class))
@@ -27,7 +28,7 @@
     :when-let [answer (c/wrong-answer content)]
     :do (prn content "->" answer)
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
-    (doseq [ans answer] (reply ans))))
+    (doseq [ans answer] (slow/add channel-id #(reply ans)))))
 
 (defmethod handle-event :default [_ _])
 
