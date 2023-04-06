@@ -11,7 +11,7 @@
                "meow :3" "meow"
                "mraow :3 " "mraow"
                "meow :3 meow" "meow :3 meow"
-               "Gods, i hate trannies so much" "Gods, i hate trannies so much"))
+               "Gods, i meow so much" "Gods, i meow so much"))
            (deftest extract-meows-test-single
              (are [in out] (= [in out]
                               (cons in (extract-meows in)))
