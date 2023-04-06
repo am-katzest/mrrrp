@@ -55,17 +55,17 @@
 (def obvious-catfaces #"uwu|owo|:3|^w^|B3")
 
 (def junk #"[^\p{L}0-9]")
-(def single-woofgex (re-str "(?i)(" woofs ")"))
-(def single-meowgex (re-str "(?i)(" meows "|" nyas ")"))
+(def woofgex (re-str "(?i)(" woofs ")"))
+(def meowgex (re-str "(?i)(" meows "|" nyas ")"))
 (defn tolerate-junk [re] (re-str junk "*" re junk "*"))
-(def single-meowgex-with-junk (tolerate-junk single-meowgex))
+(def meowgex-with-junk (tolerate-junk meowgex))
 
-(def single-woofgex-with-junk (tolerate-junk single-woofgex))
+(def woofgex-with-junk (tolerate-junk woofgex))
 
 (defn multi [re] (re-str "^ *"  re "(" junk "+" re ")*"  "[?!~ ]*$"))
 
-(def meowgex (multi single-meowgex))
-(def woofgex (multi single-woofgex))
+(def multi-meowgex (multi meowgex))
+(def multi-woofgex (multi woofgex))
 
                                         ;╻ ╻   ╻ ╻
                                         ;┃ ┃┃ ┃┃ ┃
@@ -92,7 +92,7 @@
 (defn just-cat-stuff? [x]
   (let [bare (-> x
                  (s/replace just-catface "")
-                 (s/replace single-meowgex ""))]
+                 (s/replace meowgex ""))]
     (re-pred #"(?i)^[^\p{L}0-9]*$" bare)))
 
 (defn extract-meows [input]
@@ -108,7 +108,7 @@
 
 (defn dig-for-cat-stuff [x]
   (let [ans (->> x
-                 (re-seq (re-str #"\b" just-catface #"\b" "|" obvious-catfaces "|" #"\b" single-meowgex #"\b" "|" obvious-meows))
+                 (re-seq (re-str #"\b" just-catface #"\b" "|" obvious-catfaces "|" #"\b" meowgex #"\b" "|" obvious-meows))
                  (map first))]
     (when (pos? (count ans))
       ans)))
@@ -130,25 +130,25 @@
    (b/cond
      :let [s (strip-trailing-catface input)]
      ;; single meows
-     (re-pred single-meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
-     (re-pred single-meowgex-with-junk input) [input] ; meow! -> meow!
-     (re-pred single-meowgex s) [(append-catface s)]  ; meow :3 -> meow ^w^
-     (re-pred single-meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
+     (re-pred meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
+     (re-pred meowgex-with-junk input) [input] ; meow! -> meow!
+     (re-pred meowgex s) [(append-catface s)]  ; meow :3 -> meow ^w^
+     (re-pred meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
 
      ;; repsond with meows to woofs
-     (re-pred single-woofgex input) [(append-catface 0.2 (make-meows))]
-     (re-pred single-meowgex-with-junk input) [(make-meows)]
-     (re-pred single-meowgex s) [(append-catface (make-meows))]
-     (re-pred single-meowgex-with-junk s) [(make-meows)]
+     (re-pred woofgex input) [(append-catface 0.2 (make-meows))]
+     (re-pred meowgex-with-junk input) [(make-meows)]
+     (re-pred meowgex s) [(append-catface (make-meows))]
+     (re-pred meowgex-with-junk s) [(make-meows)]
 
      ;; just meows
-     (re-pred meowgex input) [(append-catface 0.4 s)]
-     (re-pred meowgex s) [(append-catface s)]
-     (re-pred woofgex input) [(make-meows 2)]
-     (re-pred woofgex s) [(append-catface (make-meows 3))]
+     (re-pred multi-meowgex input) [(append-catface 0.4 s)]
+     (re-pred multi-meowgex s) [(append-catface s)]
+     (re-pred multi-woofgex input) [(make-meows 2)]
+     (re-pred multi-woofgex s) [(append-catface (make-meows 3))]
      ;; meows mixed with catfaces
-     (and (re-seq meowgex input) (just-cat-stuff? input)) [(append-catface s)]
-     (and (re-seq woofgex input) (just-cat-stuff? input)) [(append-catface (make-meows 5))]
+     (and (re-seq multi-meowgex input) (just-cat-stuff? input)) [(append-catface s)]
+     (and (re-seq multi-woofgex input) (just-cat-stuff? input)) [(append-catface (make-meows 5))]
      ;; just catface
      (re-pred just-catface input) [input]
      ;; dig meows
