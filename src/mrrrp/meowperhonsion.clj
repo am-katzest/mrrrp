@@ -4,7 +4,7 @@
 
 (def re-str (comp re-pattern str))
 
-(defn re-pred [pred x] (some? (re-matches pred x)))
+(defn matches? [pred x] (some? (re-matches pred x)))
 
 (defn any-order [a b]
   (re-str "(" a b "|" b a ")"))
@@ -93,7 +93,7 @@
   (let [bare (-> x
                  (s/replace just-catface "")
                  (s/replace meowgex ""))]
-    (re-pred #"(?i)^[^\p{L}0-9]*$" bare)))
+    (matches? #"(?i)^[^\p{L}0-9]*$" bare)))
 
 (defn extract-meows [input]
   [(strip-trailing-catface input)])
@@ -130,31 +130,31 @@
    (b/cond
      :let [s (strip-trailing-catface input)]
      ;; single meows
-     (re-pred meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
-     (re-pred meowgex-with-junk input) [input] ; meow! -> meow!
-     (re-pred meowgex s) [(append-catface s)]  ; meow :3 -> meow ^w^
-     (re-pred meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
+     (matches? meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
+     (matches? meowgex-with-junk input) [input]            ; meow! -> meow!
+     (matches? meowgex s) [(append-catface s)]             ; meow :3 -> meow ^w^
+     (matches? meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
 
      ;; repsond with meows to woofs
-     (re-pred woofgex input) [(append-catface 0.2 (make-meows))]
-     (re-pred meowgex-with-junk input) [(make-meows)]
-     (re-pred meowgex s) [(append-catface (make-meows))]
-     (re-pred meowgex-with-junk s) [(make-meows)]
+     (matches? woofgex input) [(append-catface 0.2 (make-meows))]
+     (matches? meowgex-with-junk input) [(make-meows)]
+     (matches? meowgex s) [(append-catface (make-meows))]
+     (matches? meowgex-with-junk s) [(make-meows)]
 
      ;; just meows
-     (re-pred multi-meowgex input) [(append-catface 0.4 s)]
-     (re-pred multi-meowgex s) [(append-catface s)]
-     (re-pred multi-woofgex input) [(make-meows 2)]
-     (re-pred multi-woofgex s) [(append-catface (make-meows 3))]
+     (matches? multi-meowgex input) [(append-catface 0.4 s)]
+     (matches? multi-meowgex s) [(append-catface s)]
+     (matches? multi-woofgex input) [(make-meows 2)]
+     (matches? multi-woofgex s) [(append-catface (make-meows 3))]
      ;; meows mixed with catfaces
      (and (re-seq multi-meowgex input) (just-cat-stuff? input)) [(append-catface s)]
      (and (re-seq multi-woofgex input) (just-cat-stuff? input)) [(append-catface (make-meows 5))]
      ;; just catface
-     (re-pred just-catface input) [input]
+     (matches? just-catface input) [input]
      ;; dig meows
      :let [assorted-meows (dig-for-cat-stuff input)]
-     (some? assorted-meows) (take 1 assorted-meows))
-   (remove #(#{":s" "me" "ma"} (s/lower-case %)))))
+     (some? assorted-meows) (take 1 assorted-meows)
+     [])))
 
 (defn wrong-answer [x]
   (let [ans (answer x)]
