@@ -101,12 +101,13 @@
      (append-catface meow)
      meow)))
 
+(def some-meows (re-str #"\b" just-catface #"\b" "|" obvious-catfaces "|" #"\b" meowgex #"\b" "|" obvious-meows))
+
 (defn dig-for-cat-stuff [x]
   (let [ans (->> x
-                 (re-seq (re-str #"\b" just-catface #"\b" "|" obvious-catfaces "|" #"\b" meowgex #"\b" "|" obvious-meows))
+                 (re-seq some-meows)
                  (map first))]
-    (when (pos? (count ans))
-      ans)))
+    (when (pos? (count ans)) ans)))
 
 (defn make-woofs
   ([]
@@ -115,6 +116,7 @@
    (s/join " " (repeatedly n make-woofs))))
 
 (defn make-meows
+  "produces several meows"
   ([]
    (rand-nth ["meow" "Meow" "meow!" "mriaa" "mriaw!" "mrie" "m mraow?" "mrow" "mrrrrrp" "MEEEEOOOOWWW!" "MIAU"]))
   ([n]
