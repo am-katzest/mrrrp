@@ -4,7 +4,7 @@
    [mrrrp.slowdown :as s]))
 
 (deftest some-tests
-  (binding [s/timeout 10]
+  (binding [s/*timeout* 10]
     (is (= [7 8]
            (s/clean [2 7 8 3] 15)))
     (is (= 0 (s/time-to-next-expire [] 20)))

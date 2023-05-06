@@ -68,7 +68,7 @@
 (def multi-woofgex (multi woofgex))
 
 (def catfaces [">:3" ":p" "OwO"])
-(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|>?:3c?|:.|uwu|owo)")
+(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|>?:3c?|:[p3>\])]|uwu|owo)")
 (def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
 (def trailing-catface (re-str #"(?i) +" just-catface #"(\s*$)"))
 
@@ -122,12 +122,12 @@
   ([n]
    (s/join " " (repeatedly n make-meows))))
 
-(defn answer [input]
+(defn answer [input & {:keys [cooperate]}]
   (->>
    (b/cond
      :let [s (strip-trailing-catface input)]
      ;; single meows
-     (matches? meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
+     (matches? meowgex input) (if cooperate [] [(append-catface 0.2 input)]) ; meow -> meow :3
      (matches? meowgex-with-junk input) [input]            ; meow! -> meow!
      (matches? meowgex s) [(append-catface s)]             ; meow :3 -> meow ^w^
      (matches? meowgex-with-junk s) [(append-catface s)] ; meow! :3 -> meow! ^w^
@@ -159,7 +159,7 @@
 (defn wrong-answer [x]
   (let [ans (answer x)]
     (when (and ans (seq ans) (< 0 (count ans)))
-      (if (> 1/50 (rand))
+      (if (> 1/90 (rand))
         (do
           (Thread/sleep 2000)
           ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
