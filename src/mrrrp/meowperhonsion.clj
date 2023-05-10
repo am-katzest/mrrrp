@@ -132,6 +132,9 @@
   (->>
    (b/cond
      :let [s (strip-trailing-catface input)]
+     (= "*meows*" s) ["*meows back*"]
+     (= "*barks*" s) ["*barks back*"]
+     (= "*hiss*" s) ["m-meow? ;-;"]
      ;; single meows
      (matches? meowgex input) [(append-catface 0.2 input)] ; meow -> meow :3
      (matches? meowgex-with-junk input) [input]            ; meow! -> meow!
