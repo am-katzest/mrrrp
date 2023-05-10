@@ -34,4 +34,9 @@
       "coś ma" []
       "hey Ma!" []
       "touch me" []
-      "kitty: cat" [])))
+      "kitty: cat" []))
+  (deftest it-isn't-caninephobic
+    (are [in out] (= [in out]
+                     [in (answer in)])
+      "awooooomnia" ["awooooo"]
+      "woof!" ["woof!"])))
