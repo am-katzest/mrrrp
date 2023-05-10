@@ -46,8 +46,8 @@
                                         "[ar]*w+r*(u+|o+)f+"
                                         "a+r+f+"
                                         "r+(o+|u+)f+"
-                                        "p+(a+|o+)r*"
-                                        "p+(o+|a+)r*"
+                                        "p+a+o+r*"
+                                        "p+o+a+r*"
                                         "bj*+a+r+kf*"
                                         "bj*+o+r+kf*"])))
 
