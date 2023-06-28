@@ -58,6 +58,7 @@
 (def junk #"[^\p{L}0-9]")
 (def woofgex (re-str "(?i)(" woofs ")"))
 (def meowgex (re-str "(?i)(" meows "|" nyas ")"))
+
 (defn tolerate-junk [re] (re-str junk "*" re junk "*"))
 (def meowgex-with-junk (tolerate-junk meowgex))
 
@@ -69,7 +70,7 @@
 (def multi-woofgex (multi woofgex))
 
 (def catfaces [">:3" ":p" "OwO"])
-(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|>?:3c?|:[p3>\])]|uwu|owo)")
+(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|(>|<\ ])?:3c?|:[p3>\])]|uwu|owo)")
 (def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
 (def trailing-catface (re-str #"(?i) +" just-catface #"(\s*$)"))
 
@@ -168,8 +169,10 @@
 (defn wrong-answer [x]
   (let [ans (answer x)]
     (when (and ans (seq ans) (< 0 (count ans)))
-      (if (> 1/90 (rand))
+      (if (> 1/900 (rand))
         (do
           (Thread/sleep 2000)
           ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
         ans))))
+
+;; (->> "/etc/dictionaries-common/words" slurp s/split-lines (filter #(re-matches meowgex-with-junk %)) (map println))
