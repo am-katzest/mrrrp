@@ -30,9 +30,10 @@
     (= content "start meowing") (start-meowing channel-id)
     :when (not (@blacklist channel-id))
     :when (not= @bot-id (:id author))
-    :when (g/not-gayboy (:id author))
+    :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
+    :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
+    :when  (not (and (g/gayboy-in-channel? channel-id) (g/can-gayboy-handle? content)))
     :when-let [answer (c/wrong-answer content)]
-    :do (prn content "->" answer)
     :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
     (doseq [ans answer] (slow/add channel-id #(reply ans)))))
 

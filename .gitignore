@@ -12,6 +12,5 @@ pom.xml.asc
 .hg/
 /.clj-kondo/
 /.lsp/
-/LICENSE
 /config.edn
 /MEOWKEN
