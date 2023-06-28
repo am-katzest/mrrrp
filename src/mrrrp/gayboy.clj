@@ -1,7 +1,7 @@
 (ns mrrrp.gayboy
   (:require [mrrrp.meowperhonsion :as re]))
 
-(def gayboy-meow (re/re-str "^" re/meowgex-with-junk "$"))
+(def gayboy-meow (re/re-str "^" re/meowgex "$"))
 (str gayboy-meow)
 (def gayboy-id  "204255221017214977")
 
@@ -11,9 +11,12 @@
 
 (defn gayboy-in-channel? [cid] (@channels-where-gayboy-meows cid))
 
-(defn gayboy-message? [msg] (re/matches? gayboy-meow msg))
-
+(defn is-gayboy-able-to-handle-this-message? [msg]
+  (or (re/matches? gayboy-meow msg)
+      (re/matches? #".*(:3|OwO|\^w\^|UwU).*" msg)))
 (defn maybe-update-gayboy-meowing-area [uid cid msg]
   (when (and (= uid gayboy-id)
-             (gayboy-message? msg))
+             ;; it means it meowed back at someone
+             (is-gayboy-able-to-handle-this-message? msg))
+    (print "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)
     (swap! channels-where-gayboy-meows conj cid)))
