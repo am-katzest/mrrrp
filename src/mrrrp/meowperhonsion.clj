@@ -175,4 +175,8 @@
           ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
         ans))))
 
+(defn maybe-meow-back [text reply-fn!]
+  (when-let [answer (wrong-answer text)]
+    (doseq [ans answer] (reply-fn! ans))))
+
 ;; (->> "/etc/dictionaries-common/words" slurp s/split-lines (filter #(re-matches meowgex-with-junk %)) (map println))

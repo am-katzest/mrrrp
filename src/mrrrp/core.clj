@@ -23,6 +23,9 @@
   (swap! blacklist disj id)
   (print "blacklist is now " @blacklist))
 
+(defn make-replier [channel-id]
+  (let [send-msg #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
+    (fn [msg] (slow/add channel-id #(send-msg  msg)))))
 (defmulti handle-event (fn [type _data] type))
 (defmethod handle-event :default [_ _])
 (defmethod handle-event :message-create
@@ -36,9 +39,7 @@
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
     :when  (not (and (g/gayboy-in-channel? channel-id)
                      (g/is-gayboy-able-to-handle-this-message? content)))
-    :when-let [answer (c/wrong-answer content)]
-    :let [reply #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
-    (doseq [ans answer] (slow/add channel-id #(reply ans)))))
+    :do (c/maybe-meow-back content (make-replier channel-id))))
 
 (defn start-bot! [token & intents]
   (let [event-channel (chan 100)

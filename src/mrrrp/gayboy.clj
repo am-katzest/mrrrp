@@ -18,5 +18,5 @@
   (when (and (= uid gayboy-id)
              ;; it means it meowed back at someone
              (is-gayboy-able-to-handle-this-message? msg))
-    (print "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)
-    (swap! channels-where-gayboy-meows conj cid)))
+    (swap! channels-where-gayboy-meows conj cid)
+    (print "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)))
