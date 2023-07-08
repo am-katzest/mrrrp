@@ -7,6 +7,7 @@
             [better-cond.core :as b]
             [mrrrp.slowdown :as slow]
             [mrrrp.gayboy :as g]
+            [mrrrp.finite-state-meowshin :as fsm]
             [discljord.formatting :refer [mention-user]]
             [discljord.events :refer [message-pump!]])
   (:gen-class))
@@ -26,6 +27,13 @@
 (defn make-replier [channel-id]
   (let [send-msg #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
     (fn [msg] (slow/add channel-id #(send-msg  msg)))))
+
+(defn prepare-event [cid uid msg]
+  {:cid cid
+   :uid uid
+   :msg msg
+   :reply-fn (make-replier cid)})
+
 (defmulti handle-event (fn [type _data] type))
 (defmethod handle-event :default [_ _])
 (defmethod handle-event :message-create
@@ -35,6 +43,7 @@
     (= content "start meowing") (start-meowing channel-id)
     :when (not (@blacklist channel-id))
     :when (not= @bot-id (:id author))
+    :do (fsm/accept-message! (prepare-event channel-id (:id author) content))
     :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
     :when  (not (and (g/gayboy-in-channel? channel-id)
