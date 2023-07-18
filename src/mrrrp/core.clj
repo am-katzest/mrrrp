@@ -7,7 +7,7 @@
             [better-cond.core :as b]
             [mrrrp.slowdown :as slow]
             [mrrrp.gayboy :as g]
-            [mrrrp.finite-state-meowshin :as fsm]
+            [mrrrp.finite-state-meowshine :as fsm]
             [discljord.formatting :refer [mention-user]]
             [discljord.events :refer [message-pump!]])
   (:gen-class))
@@ -28,14 +28,29 @@
   (let [send-msg #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
     (fn [msg] (slow/add channel-id #(send-msg  msg)))))
 
-(defn prepare-event [cid uid msg]
+(defn add-usage-meter [f]
+  (let [count (atom 0)
+        f' (fn [& x]
+             (swap! count inc)
+             (apply f x))]
+    [count f']))
+
+(defn make-useable-only-once [f]
+  (let [used (atom false)]
+    (fn [& x]
+      (when-not @used
+        (reset! used true)
+        (apply f x)))))
+
+(defn prepare-event [cid uid msg replier]
   {:cid cid
    :uid uid
    :msg msg
-   :reply-fn (make-replier cid)})
+   :reply-fn replier})
 
 (defmulti handle-event (fn [type _data] type))
 (defmethod handle-event :default [_ _])
+
 (defmethod handle-event :message-create
   [_ {:keys [channel-id content author]}]
   (b/cond
@@ -43,12 +58,13 @@
     (= content "start meowing") (start-meowing channel-id)
     :when (not (@blacklist channel-id))
     :when (not= @bot-id (:id author))
-    :do (fsm/accept-message! (prepare-event channel-id (:id author) content))
+    :let [replier (make-useable-only-once (make-replier channel-id))]
     :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
+    :do (fsm/accept-message! (prepare-event channel-id (:id author) content replier))
     :when  (not (and (g/gayboy-in-channel? channel-id)
                      (g/is-gayboy-able-to-handle-this-message? content)))
-    :do (c/maybe-meow-back content (make-replier channel-id))))
+    :do (c/maybe-meow-back content replier)))
 
 (defn start-bot! [token & intents]
   (let [event-channel (chan 100)
