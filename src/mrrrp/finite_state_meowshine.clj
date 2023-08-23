@@ -1,14 +1,66 @@
 (ns mrrrp.finite-state-meowshine
   (:require [statecharts.core :as fsm]))
+;; output of these functions decide what state to use
+(defn only-channel [{:keys [cid]}] cid)
 
-;; interaction 1: https://duckduckgo.com/?t=ftsa&q=top+surgery+bottom+surgery+i%27m+a+communist&iax=images&ia=images&iai=https%3A%2F%2Fpreview.redd.it%2Fqxgzc4h3f6h31.jpg%3Fwidth%3D640%26crop%3Dsmart%26auto%3Dwebp%26s%3Da71879f876110adcaf3c8b39b35c22b3d201bede
-;; something surgery
-;; something surgery (different user, checking whether they mean top/bottom is useless)
+(defn user-in-channel [{:keys [cid uid]}] [cid uid])
+
+(defn apply-event [event {:keys [machine location extract-type states] :as x}]
+  (let [loc (location event)
+        type (try  (extract-type event)
+                   (catch Throwable t
+                     {:extract-type-failed-with t}))
+        event' (assoc event :type type)
+        state (or (states loc) (fsm/initialize machine))
+        state' (try (fsm/transition machine state event')
+                    (catch Throwable t  ;inelegant, change
+                      (prn "state transition failed" {:old-state state :event event' :exception t})
+                      state))
+        state'' (dissoc state' :fx)]
+    {:fx (:fx state')
+     :state (assoc-in x [:states loc] state'')}))
+
+(defn run-event-through [fsms event]
+  (let [together (mapv (partial apply-event event) (:state fsms))]
+    {:state (mapv :state together)
+     :fx (mapcat :fx together)}))
+
+(def empty-fsms {:state []})
+;; temporarliy contains :fx key for simplicity
+(def fsms (atom empty-fsms))
+
+(defn make-fsm [machine location extract]
+  {:machine machine
+   :location location
+   :extract-type extract
+   :states {}})
+
+(defn add-fsm [x fsm] (update x :state conj fsm))
+
+(defn reg-fsm! [& args]
+  (let [fsm (apply make-fsm args)]
+    (swap! fsms add-fsm fsm)))
+
+(defn addfx
+  "adds side effects to fsm, used with :actions"
+  [& ks]
+  (fsm/assign (fn [s & _]
+                (assoc s :fx ks))))
+
+(defn reply [text] (addfx [:reply text]))
+
+(defn accept-message! "returns fx" [event]
+  (:fx (swap! fsms run-event-through event)))
+
+;┏┳┓┏━┓┏━╸╻ ╻╻┏┓╻┏━╸┏━┓
+;┃┃┃┣━┫┃  ┣━┫┃┃┗┫┣╸ ┗━┓
+;╹ ╹╹ ╹┗━╸╹ ╹╹╹ ╹┗━╸┗━┛
+;; --- commeownist ---
+;;  https://duckduckgo.com/?t=ftsa&q=top+surgery+bottom+surgery+i%27m+a+communist&iax=images&ia=images&iai=https%3A%2F%2Fpreview.redd.it%2Fqxgzc4h3f6h31.jpg%3Fwidth%3D640%26crop%3Dsmart%26auto%3Dwebp%26s%3Da71879f876110adcaf3c8b39b35c22b3d201bede
+;; user1: something surgery
+;; user2: something surgery (checking whether they mean top/bottom would make the interaction never happen)
 ;; bot: i'm a commeownist
-(defn reply [string]
-  (fn [s e]
-    ((:reply-fn e) string)
-    s))
+
 (def commeownist
   (fsm/machine
    (letfn [(idle->single [s e]
@@ -28,7 +80,7 @@
                :single-said {:on {:mentions-surgery
                                   {:target :idle
                                    :guard ids-different?
-                                   :actions (fsm/assign (reply "i'm a commeownist!"))}
+                                   :actions (reply "i'm a commeownist!")}
                                   :something-different
                                   {:target :single-said
                                    :actions (fsm/assign increment)}}
@@ -39,7 +91,9 @@
   (if (re-matches #"(?i).*(grs|srs|(top|bottom)\s+surgery|masectomy).*" msg)
     :mentions-surgery
     :something-different))
+(reg-fsm! commeownist only-channel mentions-surgery?)
 
+;; --- uwu/owo ---
 (def uwu-owo
   (fsm/machine
    {:id :uwu-owo
@@ -59,46 +113,13 @@
                         :uwu {:target :UwU
                               :actions (reply "OwO")}
                         :neither :neither}}}}))
+
 (defn uwu-owo? [{:keys [msg]}]
   (cond (re-matches #"(?i)uwu" msg) :uwu
         (re-matches #"(?i)owo" msg) :owo
         :else :neither))
-
-(defn only-channel [{:keys [cid]}] cid)
-
-(defn user-in-channel [{:keys [cid uid]}] [cid uid])
-
-(def starting-fsms
-  (mapv (fn [x] (assoc x :states {}))
-        [{:machine commeownist
-          :location only-channel
-          :extract-type mentions-surgery?}
-         {:machine uwu-owo
-          :location user-in-channel
-          :extract-type uwu-owo?}]))
-
-;╻┏┓╻╺┳╸┏━╸┏━┓┏┓╻┏━┓╻  ┏━┓
-;┃┃┗┫ ┃ ┣╸ ┣┳┛┃┗┫┣━┫┃  ┗━┓
-;╹╹ ╹ ╹ ┗━╸╹┗╸╹ ╹╹ ╹┗━╸┗━┛
-
-(defn apply-event [event {:keys [machine location extract-type states] :as x}]
-  (let [loc (location event)
-        type (try  (extract-type event)
-                   (catch Throwable t
-                     {:extract-type-failed-with t}))
-        event' (assoc event :type type)
-        state (or (states loc) (fsm/initialize machine))
-        state' (try (fsm/transition machine state event')
-                    (catch Throwable t
-                      (prn "state transition failed" {:old-state state :event event' :exception t})
-                      state))]
-    (assoc-in x [:states loc] state')))
-
-(def fsms (atom starting-fsms))
-
-(defn run-event-through [fsms event]
-  (mapv (partial apply-event event) fsms))
-
-(defn accept-message! [event]
-  (swap! fsms run-event-through event)
-  event)
+(reg-fsm! uwu-owo user-in-channel uwu-owo?)
+(as->
+ (fsm/initialize commeownist) -
+  (fsm/transition commeownist - {:uid :meow :type :mentions-surgery})
+  (fsm/transition commeownist - {:uid :other :type :mentions-surgery}))

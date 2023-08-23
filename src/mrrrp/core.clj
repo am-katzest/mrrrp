@@ -8,7 +8,7 @@
             [mrrrp.slowdown :as slow]
             [mrrrp.gayboy :as g]
             [mrrrp.finite-state-meowshine :as fsm]
-            [discljord.formatting :refer [mention-user]]
+            [mrrrp.effects :as fx]
             [discljord.events :refer [message-pump!]])
   (:gen-class))
 
@@ -20,6 +20,7 @@
 (defn- stop-meowing [id]
   (swap! blacklist conj id)
   (print "blacklist is now " @blacklist))
+
 (defn- start-meowing [id]
   (swap! blacklist disj id)
   (print "blacklist is now " @blacklist))
@@ -42,11 +43,10 @@
         (reset! used true)
         (apply f x)))))
 
-(defn prepare-event [cid uid msg replier]
+(defn prepare-event [cid uid msg]
   {:cid cid
    :uid uid
-   :msg msg
-   :reply-fn replier})
+   :msg msg})
 
 (defmulti handle-event (fn [type _data] type))
 (defmethod handle-event :default [_ _])
@@ -61,7 +61,9 @@
     :let [replier (make-useable-only-once (make-replier channel-id))]
     :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
-    :do (fsm/accept-message! (prepare-event channel-id (:id author) content replier))
+    :let [fx (fsm/accept-message! (prepare-event channel-id (:id author) content))]
+    (not-empty fx) (fx/run-fxs fx replier)
+    ;when any of more advanced behaviours activated, don't just meow back
     :when  (not (and (g/gayboy-in-channel? channel-id)
                      (g/is-gayboy-able-to-handle-this-message? content)))
     :do (c/maybe-meow-back content replier)))
@@ -89,11 +91,10 @@
 (defn get-token [meowken]
   (->> (or
         meowken
+        (println "trying to get token from file...")
         (exp->some (slurp "MEOWKEN"))
-        (System/getenv "MEOWKEN")
-        (do
-          (println "enter token!")
-          (read-line)))
+        (println "trying to get token from env...")
+        (System/getenv "MEOWKEN"))
        (remove #{\newline})
        (reduce str)))
 
