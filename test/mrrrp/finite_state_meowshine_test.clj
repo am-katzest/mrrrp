@@ -20,10 +20,12 @@
                  :B {:on {:event {:target :A}}}}})
               (constantly nil)
               (constantly :event)))
+
 (def meow
   (s/make-fsm meow-machine
               (constantly nil)
               :msg))
+
 (deftest inserting-fx
   (is (= [[:reply "meow"]]
          (as->
@@ -34,7 +36,14 @@
        (as->
         (fsm/initialize meow-machine) -
          (fsm/transition meow-machine - {:type :don't})
-         (:fx -)))))
+         (:fx -))))
+  (with-redefs [s/execs (atom s/empty-fsms)]
+    ;; imperative stuff :<
+    (is (= [] (:state @s/execs)))
+    (s/reg-fn! (constantly :reply) :reply)
+    (let [[{:keys [type function]}] (:state  @s/execs)]
+      (is (= :function type))
+      (is (ifn?  function)))))
 
 (deftest event-apply-fsm
   (let [e1 {:uid 0 :cid 0 :msg :don't}
@@ -58,12 +67,34 @@
   (let [e1 {:uid 0 :cid 0 :msg :don't}
         e2  {:uid 0 :cid 0 :msg :meow}
         group (-> s/empty-fsms
-                  (s/add-fsm meow)
-                  (s/add-fsm meow))]
+                  (s/add-exec meow)
+                  (s/add-exec meow))]
     (testing "creation"
       (is (= [:meow :meow]
-             (->> group :state (map (comp :id :machine))))))
+             (->> group :state (map :id)))))
     (testing "gathering-fx"
       (is (empty? (:fx (s/run-event-through group e1))))
       (is (= [[:reply "meow"] [:reply "meow"]]
              (:fx (s/run-event-through group e2)))))))
+
+(defn mrow [{:keys [msg]}] (if (= msg :meow) [[:reply "mrow"]] []))
+
+(deftest group-of-fns
+  (let [e1 {:uid 0 :cid 0 :msg :don't}
+        e2  {:uid 0 :cid 0 :msg :meow}
+        group (-> s/empty-fsms
+                  (s/add-exec (s/make-fn mrow :mrow))
+                  (s/add-exec meow))]
+    (testing "creation"
+      (is (= [:mrow :meow]
+             (->> group :state (map :id)))))
+    (testing "gathering-fx"
+      (is (empty? (:fx (s/run-event-through group e1))))
+      (is (= [[:reply "mrow"] [:reply "meow"]]
+             (:fx (s/run-event-through group e2)))))))
+
+(deftest wrapping-functions
+  (let [f (constantly nil)
+        wrapped (s/make-fn f :nil)]
+    (is (= :function (:type wrapped)))
+    (is (= f (:function wrapped)))))

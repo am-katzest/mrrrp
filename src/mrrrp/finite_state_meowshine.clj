@@ -5,7 +5,10 @@
 
 (defn user-in-channel [{:keys [cid uid]}] [cid uid])
 
-(defn apply-event [event {:keys [machine location extract-type states] :as x}]
+(defmulti apply-event (fn [_ r] (:type r)))
+
+(defmethod apply-event :fsm
+  [event {:keys [machine location extract-type states] :as x}]
   (let [loc (location event)
         type (try  (extract-type event)
                    (catch Throwable t
@@ -20,6 +23,11 @@
     {:fx (:fx state')
      :state (assoc-in x [:states loc] state'')}))
 
+(defmethod apply-event :function
+  [event {:keys [function] :as x}]
+  {:fx (function event)
+   :state x})
+
 (defn run-event-through [fsms event]
   (let [together (mapv (partial apply-event event) (:state fsms))]
     {:state (mapv :state together)
@@ -27,19 +35,30 @@
 
 (def empty-fsms {:state []})
 ;; temporarliy contains :fx key for simplicity
-(def fsms (atom empty-fsms))
+(def execs (atom empty-fsms))
 
 (defn make-fsm [machine location extract]
-  {:machine machine
+  {:type :fsm
+   :machine machine
+   :id (:id machine)
    :location location
    :extract-type extract
    :states {}})
 
-(defn add-fsm [x fsm] (update x :state conj fsm))
+(defn make-fn [f id]
+  {:type :function
+   :id id
+   :function f})
+
+(defn add-exec [x fsm] (update x :state conj fsm))
 
 (defn reg-fsm! [& args]
   (let [fsm (apply make-fsm args)]
-    (swap! fsms add-fsm fsm)))
+    (swap! execs add-exec fsm)))
+
+(defn reg-fn! [& args]
+  (let [fsm (apply make-fn args)]
+    (swap! execs add-exec fsm)))
 
 (defn addfx
   "adds side effects to fsm, used with :actions"
@@ -50,7 +69,7 @@
 (defn reply [text] (addfx [:reply text]))
 
 (defn accept-message! "returns fx" [event]
-  (:fx (swap! fsms run-event-through event)))
+  (:fx (swap! execs run-event-through event)))
 
 ;┏┳┓┏━┓┏━╸╻ ╻╻┏┓╻┏━╸┏━┓
 ;┃┃┃┣━┫┃  ┣━┫┃┃┗┫┣╸ ┗━┓
@@ -118,7 +137,9 @@
   (cond (re-matches #"(?i)uwu" msg) :uwu
         (re-matches #"(?i)owo" msg) :owo
         :else :neither))
+
 (reg-fsm! uwu-owo user-in-channel uwu-owo?)
+
 (as->
  (fsm/initialize commeownist) -
   (fsm/transition commeownist - {:uid :meow :type :mentions-surgery})
