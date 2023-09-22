@@ -139,8 +139,3 @@
         :else :neither))
 
 (reg-fsm! uwu-owo user-in-channel uwu-owo?)
-
-(as->
- (fsm/initialize commeownist) -
-  (fsm/transition commeownist - {:uid :meow :type :mentions-surgery})
-  (fsm/transition commeownist - {:uid :other :type :mentions-surgery}))
