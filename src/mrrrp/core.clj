@@ -3,7 +3,7 @@
             [clojure.core.async :refer [chan close!]]
             [discljord.messaging :as discord-rest]
             [discljord.connections :as discord-ws]
-            [mrrrp.meowperhonsion :as c]
+            [mrrrp.additional-repliers]
             [better-cond.core :as b]
             [mrrrp.slowdown :as slow]
             [mrrrp.gayboy :as g]
@@ -61,12 +61,10 @@
     :let [replier (make-useable-only-once (make-replier channel-id))]
     :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
-    :let [fx (fsm/accept-message! (prepare-event channel-id (:id author) content))]
-    (not-empty fx) (fx/run-fxs fx replier)
-    ;when any of more advanced behaviours activated, don't just meow back
     :when  (not (and (g/gayboy-in-channel? channel-id)
                      (g/is-gayboy-able-to-handle-this-message? content)))
-    :do (c/maybe-meow-back content replier)))
+    :let [fx (fsm/accept-message! (prepare-event channel-id (:id author) content))]
+    (not-empty fx) (fx/run-fxs fx replier)))
 
 (defn start-bot! [token & intents]
   (let [event-channel (chan 100)

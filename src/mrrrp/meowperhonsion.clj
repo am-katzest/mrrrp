@@ -53,7 +53,7 @@
 
 (def obvious-meows #"nya|mrr+p?|mraow|meow")
 (def obvious-woofs #"woof|bark|awo+")
-(def obvious-catfaces #"uwu|owo|:3|^w^|B3")
+(def obvious-catfaces #":3|^w^|B3")
 
 (def junk #"[^\p{L}0-9]")
 (def woofgex (re-str "(?i)(" woofs ")"))
@@ -69,8 +69,8 @@
 (def multi-meowgex (multi meowgex))
 (def multi-woofgex (multi woofgex))
 
-(def catfaces [">:3" ":p" "OwO"])
-(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|(>|<\ ])?:3c?|:[p3>\])]|uwu|owo)")
+(def catfaces [">:3" ":p" "OwO" ":3"])
+(def just-catface #"(?i)(([^\p{Alpha}\s])[wvo_-]\2|(>|<\ ])?:3c?|:[p3>\])])")
 (def catface (re-str #"(\s+|^)" just-catface #"(\s+|$)"))
 (def trailing-catface (re-str #"(?i) +" just-catface #"(\s*$)"))
 
@@ -166,17 +166,9 @@
      (some? assorted-meows) (take 1 assorted-meows)
      [])))
 
-(defn wrong-answer [x]
-  (let [ans (answer x)]
-    (when (and ans (seq ans) (< 0 (count ans)))
-      (if (> 1/900 (rand))
-        (do
-          (Thread/sleep 2000)
-          ["Gave up trying to execute custom command #:3 after 1 minute because there is already one or more instances of it being executed"])
-        ans))))
-
-(defn maybe-meow-back [text reply-fn!]
-  (when-let [answer (wrong-answer text)]
-    (doseq [ans answer] (reply-fn! ans))))
+(defn wrap-answer [event]
+  (let [{:keys [msg]} event
+        ans (answer msg)]
+    (mapv (fn [reply] [:reply reply]) ans)))
 
 ;; (->> "/etc/dictionaries-common/words" slurp s/split-lines (filter #(re-matches meowgex-with-junk %)) (map println))
