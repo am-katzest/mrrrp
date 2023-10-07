@@ -51,8 +51,8 @@
                                         "bj*+a+r+kf*"
                                         "bj*+o+r+kf*"])))
 
-(def obvious-meows #"nya|mrr+p?|mraow|meow")
-(def obvious-woofs #"woof|bark|awo+")
+(def obvious-meows #"nya|mrr+p?|mraow|meow|miał")
+(def obvious-woofs #"woof|bark|awoo+")
 (def obvious-catfaces #":3|^w^|B3")
 
 (def junk #"[^\p{L}0-9]")
