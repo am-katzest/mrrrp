@@ -1,15 +1,16 @@
 (ns mrrrp.core
-  (:require [clojure.edn :as edn]
-            [clojure.core.async :refer [chan close!]]
-            [discljord.messaging :as discord-rest]
-            [discljord.connections :as discord-ws]
-            [mrrrp.additional-repliers]
-            [better-cond.core :as b]
-            [mrrrp.slowdown :as slow]
-            [mrrrp.gayboy :as g]
-            [mrrrp.finite-state-meowshine :as fsm]
-            [mrrrp.effects :as fx]
-            [discljord.events :refer [message-pump!]])
+  (:require
+   [better-cond.core :as b]
+   [clojure.core.async :refer [chan close!]]
+   [clojure.string :as str]
+   [discljord.connections :as discord-ws]
+   [discljord.events :refer [message-pump!]]
+   [discljord.messaging :as discord-rest]
+   [mrrrp.additional-repliers]
+   [mrrrp.effects :as fx]
+   [mrrrp.finite-state-meowshine :as fsm]
+   [mrrrp.gayboy :as g]
+   [mrrrp.slowdown :as slow])
   (:gen-class))
 
 (def state (atom nil))
@@ -86,22 +87,33 @@
   `(try ~@exprs
         (catch Throwable ~(gensym) nil)))
 
-(defn get-token [meowken]
-  (->> (or
-        meowken
-        (println "trying to get token from file...")
-        (exp->some (slurp "MEOWKEN"))
-        (println "trying to get token from env...")
-        (System/getenv "MEOWKEN"))
-       (remove #{\newline})
-       (reduce str)))
+(defn get-token []
+  (some-> (b/cond
+            :do (println "trying to get token from env...")
+            :let [env-content (System/getenv "MEOWKEN")]
+            (some? env-content) env-content
 
-(defn -main [& meowken]
-  (reset! state (start-bot! (get-token (first meowken)) :guild-messages))
-  (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
-  (future (try
-            (message-pump! (:events @state) handle-event)
-            (finally (stop-bot! @state)))))
+            :do (println "trying to get token from file...")
+            :let [file-content (exp->some (slurp "MEOWKEN"))]
+            (some? file-content) file-content)
+          str/trim))
+
+(defn -main [& _]
+  (if-let [token (exp->some (get-token))]
+    (do
+      (let [s (start-bot! token :guild-messages)]
+        (println s)
+        (when-not (every? some? ((juxt :rest :gateway :events) s))
+          (println "could not start the bot")
+          (System/exit 1))
+        (reset! state s))
+      (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
+      (future (try
+                (message-pump! (:events @state) handle-event)
+                (finally (stop-bot! @state)
+                         (System/exit 0)))))
+    (do (println "could not acquire token")
+        (System/exit 1))))
 
 (comment
   (-main)
