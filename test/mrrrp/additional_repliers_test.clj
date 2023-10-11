@@ -16,4 +16,8 @@
   (testing "asia is getting smart"
     (let [a1 (sut/nuh-uh {:msg "nuh  uh"})
           a2 (sut/nuh-uh {:msg " nuh  uh "})]
-      (is (= [[:reply "yuh  uh"]] a1 a2)))))
+      (is (= [[:reply "yuh  uh"]] a1 a2))))
+  (testing "asia is getting smarter"
+    (let [a1 (sut/nuh-uh {:msg "nuh   uh"})
+          a2 (sut/nuh-uh {:msg " nuh   uh "})]
+      (is (= [[:reply "yuh-uh >:3"]] a1 a2)))))
