@@ -99,21 +99,22 @@
           str/trim))
 
 (defn -main [& _]
-  (if-let [token (exp->some (get-token))]
-    (do
-      (let [s (start-bot! token :guild-messages)]
-        (println s)
-        (when-not (every? some? ((juxt :rest :gateway :events) s))
-          (println "could not start the bot")
-          (System/exit 1))
-        (reset! state s))
-      (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
-      (future (try
-                (message-pump! (:events @state) handle-event)
-                (finally (stop-bot! @state)
-                         (System/exit 0)))))
-    (do (println "could not acquire token")
-        (System/exit 1))))
+  (b/cond
+    :let [token (exp->some (get-token))]
+    (nil? token) (do (println "could not acquire token")
+                     (System/exit 1))
+
+    :let [s (start-bot! token :guild-messages)
+          started-correctly? (every? some? ((juxt :rest :gateway :events) s))]
+    (not started-correctly?) (do (println "could not start the bot")
+                                 (System/exit 1))
+
+    (do (reset! state s)
+        (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
+        (try
+          (message-pump! (:events @state) handle-event)
+          (finally (stop-bot! @state)
+                   (System/exit 0))))))
 
 (comment
   (-main)
