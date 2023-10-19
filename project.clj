@@ -6,4 +6,5 @@
                  [clj-statecharts "0.1.7"]
                  [org.suskalo/discljord "1.1.1"]]
   :repl-options {:init-ns mrrrp.core}
+  :uberjar-name "mrrrp.jar"
   :main mrrrp.core)
