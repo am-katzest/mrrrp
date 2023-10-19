@@ -49,7 +49,10 @@
                                         "p+a+o+r*"
                                         "p+o+a+r*"
                                         "bj*+a+r+kf*"
-                                        "bj*+o+r+kf*"])))
+                                        "bj*+o+r+kf*"
+                                        "ha+ł+"
+                                        "ha+uu+"
+                                        "sz(cz)+e+k+"])))
 
 (def obvious-meows #"nya|mrr+p?|mraow|meow|miał")
 (def obvious-woofs #"woof|bark|awoo+")

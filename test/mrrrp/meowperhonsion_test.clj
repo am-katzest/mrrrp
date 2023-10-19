@@ -6,7 +6,7 @@
   `(are [in out] (= [in out]
                     [in (answer in)]) ~@pairs))
 (deftest meowperhension-test-no-appending
-  (binding [c/append-catface str]
+  (binding [c/append-catface (fn [& x] (last x))]
     (testing "stripper-test"
       (are [in out] (= [in out]
                        [in (c/strip-trailing-catface in)])
@@ -44,4 +44,9 @@
     (testing "stops-awo-ing"
       (meowbacks
        "wordawo" []
-       "prawo" []))))
+       "w prawo skręcaj" []))
+    (testing "polskie szczekania"
+      (meowbacks
+       "hał hał" ["hał hał"]
+       "hauu" ["hauu"]
+       "szczek" ["szczek"]))))
