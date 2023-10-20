@@ -49,4 +49,7 @@
       (meowbacks
        "hał hał" ["hał hał"]
        "hauu" ["hauu"]
-       "szczek" ["szczek"]))))
+       "szczek" ["szczek"]))
+    (testing "brak ramion"
+      (meowbacks
+       "wznieś ramiona" []))))

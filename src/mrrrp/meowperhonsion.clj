@@ -29,7 +29,7 @@
                          "m+[oae]+r*[łwu]+"
                          '"p+u*rr+"
                          "m[ynmpwreaouwi]+[włu]" ; this one should get most
-                         (str "r+" (at-least-one "[nmwreaouwi]" "[rea]") "[iawłu]+")
+                         (str "r+" (at-least-one "[mwreaouwi]" "[rea]") "[iawłu]+")
                          "m+r+(p+|e+|a+)"
                          "m+r+i+a+p+"
                          "m+y*a+o*w+"
