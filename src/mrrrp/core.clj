@@ -1,20 +1,21 @@
-(ns mrrrp.core
-  (:require
-   [better-cond.core :as b]
-   [clojure.core.async :refer [chan close!]]
-   [clojure.string :as str]
-   [discljord.connections :as discord-ws]
-   [discljord.events :refer [message-pump!]]
-   [discljord.messaging :as discord-rest]
-   [mrrrp.additional-repliers]
-   [mrrrp.effects :as fx]
-   [mrrrp.finite-state-meowshine :as fsm]
-   [mrrrp.gayboy :as g]
-   [mrrrp.slowdown :as slow])
-  (:gen-class))
+ (ns mrrrp.core
+   (:require
+    [better-cond.core :as b]
+    [clojure.core.async :refer [chan close!]]
+    [malli.core :as m]
+    [malli.error :as me]
+    [aero.core :as aero]
+    [discljord.connections :as discord-ws]
+    [discljord.events :refer [message-pump!]]
+    [discljord.messaging :as discord-rest]
+    [mrrrp.additional-repliers]
+    [mrrrp.effects :as fx]
+    [mrrrp.finite-state-meowshine :as fsm]
+    [mrrrp.gayboy :as g]
+    [mrrrp.slowdown :as slow])
+   (:gen-class))
 
-(def state (atom nil))
-(def bot-id (atom nil))
+(def connection (atom nil))
 
 (def blacklist (atom #{}))
 
@@ -27,15 +28,8 @@
   (print "blacklist is now " @blacklist))
 
 (defn make-replier [channel-id]
-  (let [send-msg #(discord-rest/create-message! (:rest @state) channel-id :content  (str %))]
+  (let [send-msg #(discord-rest/create-message! (:rest @connection) channel-id :content  (str %))]
     (fn [msg] (slow/add channel-id #(send-msg  msg)))))
-
-(defn add-usage-meter [f]
-  (let [count (atom 0)
-        f' (fn [& x]
-             (swap! count inc)
-             (apply f x))]
-    [count f']))
 
 (defn make-useable-only-once [f]
   (let [used (atom false)]
@@ -58,7 +52,7 @@
     (= content "stop meowing") (stop-meowing channel-id)
     (= content "start meowing") (start-meowing channel-id)
     :when (not (@blacklist channel-id))
-    :when (not= @bot-id (:id author))
+    :when (not= (:bot-id @connection) (:id author))
     :let [replier (make-useable-only-once (make-replier channel-id))]
     :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
     :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
@@ -75,47 +69,58 @@
      :gateway gateway-connection
      :rest    rest-connection}))
 
+(defn init-connection! [token]
+  (let [s (start-bot! token :guild-messages)
+        started-correctly? (every? some? ((juxt :rest :gateway :events) s))]
+    (when (not started-correctly?) (throw (Exception. "could not start the bot")))
+    (assoc s :bot-id (:id @(discord-rest/get-current-user! (:rest s))))))
+
 (defn stop-bot! [{:keys [rest gateway events] :as _state}]
   (discord-rest/stop-connection! rest)
   (discord-ws/disconnect-bot! gateway)
   (close! events))
 
-(defn  kill-bot! [{:keys [rest gateway events] :as _state}]
-  (discord-ws/disconnect-bot! gateway))
+(defn run-bot! [connection]
+  (try
+    (message-pump! (:events connection) handle-event)
+    (finally (stop-bot! connection))))
 
-(defmacro exp->some [& exprs]
-  `(try ~@exprs
-        (catch Throwable ~(gensym) nil)))
+(def conf-schema
+  [:map
+   [:rate-limit [:map
+                 [:count pos-int?]
+                 [:period pos-int?]]]
+   [:admins [:vector :string]]
+   [:secrets [:map
+              [:meowken [:string {:min 50 :max 100}]]]]])
 
-(defn get-token []
-  (some-> (b/cond
-            :do (println "trying to get token from env...")
-            :let [env-content (System/getenv "MEOWKEN")]
-            (some? env-content) env-content
-
-            :do (println "trying to get token from file...")
-            :let [file-content (exp->some (slurp "MEOWKEN"))]
-            (some? file-content) file-content)
-          str/trim))
-
-(defn -main [& _]
+(defn read-config [args]
   (b/cond
-    :let [token (exp->some (get-token))]
-    (nil? token) (do (println "could not acquire token")
-                     (System/exit 1))
+    (not= 1 (count args))
+    (throw (Exception. "program takes the config file name as argument"))
 
-    :let [s (start-bot! token :guild-messages)
-          started-correctly? (every? some? ((juxt :rest :gateway :events) s))]
-    (not started-correctly?) (do (println "could not start the bot")
-                                 (System/exit 1))
+    :let [config (try (aero/read-config (first args))
+                      (catch java.io.IOException _
+                        (throw (Exception. "couldn't read the config file"))))]
 
-    (do (reset! state s)
-        (reset! bot-id (:id @(discord-rest/get-current-user! (:rest @state))))
-        (try
-          (message-pump! (:events @state) handle-event)
-          (finally (stop-bot! @state)
-                   (System/exit 0))))))
+    (not (m/validate conf-schema config))
+    (->> config (m/explain conf-schema) me/humanize (str "improper config:\n") Exception. throw)
+    :else config))
+
+(defn -main [& args]
+  (try
+    (let [conf (read-config args)]
+      (reset! connection (-> conf :secrets :meowken init-connection!))
+      (run-bot! @connection))
+    (catch
+     Exception e
+      (binding [*out* *err*]
+        (println "failed because:" (:reason (ex-message e)))))
+    (catch Throwable t
+      (binding [*out* *err*]
+        (println "something else happened :<" t)))))
+
 
 (comment
-  (-main)
-  (kill-bot! @state))
+  (-main "default_config.edn")
+  (stop-bot! @connection))

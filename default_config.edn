@@ -1,0 +1,4 @@
+{:rate-limit {:count 5
+              :period 60}
+ :admins ["499998133497888768"]
+ :secrets #include "MEOWKEN"}
