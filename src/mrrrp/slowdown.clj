@@ -1,5 +1,6 @@
 (ns mrrrp.slowdown
   (:require
+   [clojure.tools.logging :as log]
    [better-cond.core :as b]))
 ;; discord auto-mutes bot when it sends more than 5 messages in 5 seconds,
 ;; and used api wrapper doesn't handle this  ;-;
@@ -22,10 +23,10 @@
 (defn- execute-when-ready [lst f]
   (let [time (System/currentTimeMillis)
         lst (clean lst time)]
-    (println (count lst))
+    (log/debugf "sent %d messages within time window" (count lst))
     (if (>= (count lst) *max-messages*)
       (do
-        (println "limiting myself")
+        (log/debug "rate limiting myself")
         (Thread/sleep (min (time-to-next-expire lst time) *timeout*))
         (recur lst f))
       (do (f)
@@ -38,5 +39,3 @@
     (swap! waitlist assoc id (agent '())))
   (let [a (@waitlist id)]
     (send a execute-when-ready f)))
-
-(comment (add "uwu" #(println "mrrrp")))

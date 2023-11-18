@@ -1,5 +1,7 @@
 (ns mrrrp.gayboy
-  (:require [mrrrp.meowperhonsion :as re]))
+  (:require
+   [clojure.tools.logging :as log]
+   [mrrrp.meowperhonsion :as re]))
 
 (def gayboy-meow (re/re-str "^" re/meowgex "$"))
 (str gayboy-meow)
@@ -19,4 +21,4 @@
              ;; it means it meowed back at someone
              (is-gayboy-able-to-handle-this-message? msg))
     (swap! channels-where-gayboy-meows conj cid)
-    (print "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)))
+    (log/info "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)))

@@ -1,16 +1,16 @@
-(ns mrrrp.effects)
-;; the dirty part
+(ns mrrrp.effects
+  (:require [clojure.tools.logging :as log]))
 
 (defmulti run-fx (fn [type & _] type))
 
 (def ^:dynamic *reply-fn*)
 (defmethod run-fx :reply
   [_ value]
+  (log/info "replying")
   (*reply-fn* value))
 
 (defn run-fxs [fxs replier]
-  (println "fxs" fxs)
+  (log/info "executing fxs" fxs)
   (binding [*reply-fn* replier]
     (doseq [fx fxs]
-      (apply run-fx fx)))
-  (println "finished"))
+      (apply run-fx fx))))

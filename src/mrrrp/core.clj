@@ -1,19 +1,20 @@
- (ns mrrrp.core
-   (:require
-    [better-cond.core :as b]
-    [clojure.core.async :refer [chan close!]]
-    [malli.core :as m]
-    [malli.error :as me]
-    [aero.core :as aero]
-    [discljord.connections :as discord-ws]
-    [discljord.events :refer [message-pump!]]
-    [discljord.messaging :as discord-rest]
-    [mrrrp.additional-repliers]
-    [mrrrp.effects :as fx]
-    [mrrrp.finite-state-meowshine :as fsm]
-    [mrrrp.gayboy :as g]
-    [mrrrp.slowdown :as slow])
-   (:gen-class))
+(ns mrrrp.core
+  (:require
+   [better-cond.core :as b]
+   [clojure.core.async :refer [chan close!]]
+   [malli.core :as m]
+   [clojure.tools.logging :as log]
+   [malli.error :as me]
+   [aero.core :as aero]
+   [discljord.connections :as discord-ws]
+   [discljord.events :refer [message-pump!]]
+   [discljord.messaging :as discord-rest]
+   [mrrrp.additional-repliers]
+   [mrrrp.effects :as fx]
+   [mrrrp.finite-state-meowshine :as fsm]
+   [mrrrp.gayboy :as g]
+   [mrrrp.slowdown :as slow])
+  (:gen-class))
 
 (def connection (atom nil))
 
@@ -21,11 +22,11 @@
 
 (defn- stop-meowing [id]
   (swap! blacklist conj id)
-  (print "blacklist is now " @blacklist))
+  (log/info "blacklist is now " @blacklist))
 
 (defn- start-meowing [id]
   (swap! blacklist disj id)
-  (print "blacklist is now " @blacklist))
+  (log/info "blacklist is now " @blacklist))
 
 (defn make-replier [channel-id]
   (let [send-msg #(discord-rest/create-message! (:rest @connection) channel-id :content  (str %))]
@@ -80,6 +81,22 @@
   (discord-ws/disconnect-bot! gateway)
   (close! events))
 
+#_(defn run-bot!
+    "Starts a process which pulls events off of the channel and calls
+  handle-event with them, and stops when it sees a :disconnect event.
+  This takes control of the current thread.
+
+  The handle-event function takes the keyword event type, and the event
+  data."
+    [event-ch handle-event]
+    (loop []
+      (let [[event-type event-data] (a/<!! event-ch)]
+        (try (handle-event event-type event-data)
+             (catch Exception e
+               (log/error e "Exception occurred in event handler.")))
+        (when-not (= event-type :disconnect)
+          (recur))))
+    nil)
 (defn run-bot! [connection]
   (try
     (message-pump! (:events connection) handle-event)
@@ -115,11 +132,10 @@
     (catch
      Exception e
       (binding [*out* *err*]
-        (println "failed because:" (:reason (ex-message e)))))
+        (log/error "failed because:" (ex-message e))))
     (catch Throwable t
       (binding [*out* *err*]
-        (println "something else happened :<" t)))))
-
+        (log/error "something else happened :<" t)))))
 
 (comment
   (-main "default_config.edn")
