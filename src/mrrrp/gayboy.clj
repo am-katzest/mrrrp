@@ -5,7 +5,7 @@
 
 (def gayboy-meow (re/re-str "^" re/meowgex "$"))
 (str gayboy-meow)
-(def gayboy-id  "204255221017214977")
+(def gayboy-id  "204255221017214977")   ;TODO move to config
 
 (def channels-where-gayboy-meows (atom #{}))
 
