@@ -42,7 +42,6 @@
    :uid uid
    :msg msg})
 
-
 ;; connection to discord
 (defn init-connection! [token & intents]
   (let [event-channel (chan 100)
@@ -57,21 +56,25 @@
   (close! events))
 
 (defrecord DCConnection
-    [token events gateway rest bot-id]
-    component/Lifecycle
-    (start [component]
-      (let [{:keys [rest gateway events] :as conn} (init-connection! (:token component) :guild-messages)
-            started-correctly? (and rest gateway events)]
-        (when (not started-correctly?)
-          (close-connection! conn)
-          (throw (Exception. "could not start the bot")))
-        (->> @(discord-rest/get-current-user! rest)
-             :id
-             (assoc conn :bot-id)
-             (into component))))
-    (stop [component]
-      (close-connection! component)
-      component))
+           [token events gateway rest bot-id]
+  component/Lifecycle
+  (start [component]
+    (log/info "starting connection")
+    (let [{:keys [rest gateway events] :as conn} (init-connection! (:token component) :guild-messages)
+          started-correctly? (and rest gateway events)]
+      (when (not started-correctly?)
+        (close-connection! conn)
+        (throw (Exception. "could not start the bot")))
+      (let [c (->> @(discord-rest/get-current-user! rest)
+                   :id
+                   (assoc conn :bot-id)
+                   (into component))]
+        (log/info "started connection == " c)
+        c)))
+  (stop [component]
+    (log/info "stopping connection")
+    (close-connection! component)
+    component))
 
 ;; replier
 
@@ -107,18 +110,20 @@
   [channel]
   (let [p (promise)
         closed? (a/put! channel [:disconnect p])]
-    (or closed? @p)
-    ))
+    (or closed? @p)))
 
 (defrecord Responder
     ;; decides if/how to respond to each message
-    [config connection]
-    component/Lifecycle
-    (start [component]
-      (future (run-bot! (:channel (:connection component)) config))
-      component)
-    (stop [component]
-      (stop-bot! (:connection component))))
+           [config connection]
+  component/Lifecycle
+  (start [component]
+    (log/info "starting responder")
+    (future (run-bot! (:connection component) config))
+    component)
+  (stop [component]
+    (log/info "stopping responder")
+    (stop-bot! (:events (:connection component)))
+    component))
 
 (def conf-schema
   [:map
@@ -129,19 +134,15 @@
    [:secrets [:map
               [:meowken [:string {:min 50 :max 100}]]]]])
 
-(defn read-config [args]
+(defn read-config [conf-file]
   (b/cond
-    (not= 1 (count args))
-    (throw (Exception. "program takes the config file name as argument"))
-
-    :let [config (try (aero/read-config (first args))
+    :let [config (try (aero/read-config conf-file)
                       (catch java.io.IOException _
                         (throw (Exception. "couldn't read the config file"))))]
 
     (not (m/validate conf-schema config))
     (->> config (m/explain conf-schema) me/humanize (str "improper config:\n") Exception. throw)
     :else config))
-
 
 (defn mrrrp-system [config]
   (let [token (-> config :secrets :meowken)
@@ -150,20 +151,23 @@
      :connection (map->DCConnection {:token token})
      :responder (component/using
                  (map->Responder {:config conf})
-                 [:connection]))))
+                 {:connection :connection}))))
 
-(defn -main [& args]
+(defonce running-system (atom nil))
+(defn run-system! [args]
   (try
     (let [config (read-config args)
           system (mrrrp-system config)]
-      (.start system))
+      (log/info "starting system...")
+      (reset! running-system (.start system)))
     (catch
-        Exception e
-        (binding [*out* *err*]
-          (log/error "failed because:" (ex-message e))))
-    (catch Throwable t
+     Exception e
       (binding [*out* *err*]
-        (log/error "something else happened :<" t)))))
+        (log/error "failed because:" (ex-message e))))))
+
+(defn -main [conf-file]
+  (run-system! conf-file))
 
 (comment
-  (-main "default_config.edn"))
+  (do (swap! running-system (fn [s] (when s (.stop s))))
+      (run-system! "default_config.edn")))
