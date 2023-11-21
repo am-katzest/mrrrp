@@ -11,7 +11,7 @@
    [malli.core :as m]
    [malli.error :as me]
    [mrrrp.additional-repliers]
-   [mrrrp.message-handler :refer [handle-message]]))
+   [mrrrp.message-handler :refer [handle-message initial-state]]))
 
 ;; connection to discord
 (defn init-connection! [token & intents]
@@ -69,7 +69,7 @@
   handle-event with them, stops when it sees a :disconnect event."
   [{:keys [config connection msgout]}]
   (let [cfg (assoc config :bot-id (:bot-id connection))]
-    (a/go-loop [state {}]
+    (a/go-loop [state initial-state]
       (let [[event-type event-data] (a/<! (:events connection))]
         (case event-type
           :disconnect (deliver event-data nil)

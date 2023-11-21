@@ -43,3 +43,5 @@
       (prepare-event channel-id (:id author) content)
       fsm/accept-message!
       (map (partial add-fx-context channel-id)))]))
+
+(def initial-state {})
