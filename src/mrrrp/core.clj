@@ -1,46 +1,17 @@
 (ns mrrrp.core
+  (:gen-class)
   (:require
-   [better-cond.core :as b]
-   [clojure.core.async :refer [chan close!] :as a]
-   [malli.core :as m]
-   [clojure.tools.logging :as log]
-   [malli.error :as me]
    [aero.core :as aero]
+   [better-cond.core :as b]
+   [clojure.core.async :as a :refer [chan close!]]
+   [clojure.tools.logging :as log]
+   [com.stuartsierra.component :as component]
    [discljord.connections :as discord-ws]
    [discljord.messaging :as discord-rest]
-   [com.stuartsierra.component :as component]
+   [malli.core :as m]
+   [malli.error :as me]
    [mrrrp.additional-repliers]
-   [mrrrp.effects :as fx]
-   [mrrrp.finite-state-meowshine :as fsm]
-   [mrrrp.gayboy :as g]
-   [mrrrp.slowdown :as slow])
-  (:gen-class))
-
-(def blacklist (atom #{}))
-
-(defn- stop-meowing [id]
-  (swap! blacklist conj id)
-  (log/info "blacklist is now " @blacklist))
-
-(defn- start-meowing [id]
-  (swap! blacklist disj id)
-  (log/info "blacklist is now " @blacklist))
-
-(defn make-replier [rest channel-id]
-  (let [send-msg #(discord-rest/create-message! rest channel-id :content  (str %))]
-    (fn [msg] (slow/add channel-id #(send-msg  msg)))))
-
-(defn make-useable-only-once [f]
-  (let [used (atom false)]
-    (fn [& x]
-      (when-not @used
-        (reset! used true)
-        (apply f x)))))
-
-(defn prepare-event [cid uid msg]
-  {:cid cid
-   :uid uid
-   :msg msg})
+   [mrrrp.message-handler :refer [handle-message]]))
 
 ;; connection to discord
 (defn init-connection! [token & intents]
@@ -76,22 +47,6 @@
     (close-connection! component)
     component))
 
-;; replier
-
-(defn handle-message
-  [config connection {:keys [channel-id content author]}]
-  (b/cond
-    (= content "stop meowing") (stop-meowing channel-id)
-    (= content "start meowing") (start-meowing channel-id)
-    :when (not (@blacklist channel-id))
-    :when (not= (:bot-id connection) (:id author))
-    :let [replier (make-useable-only-once (make-replier (:rest connection) channel-id))]
-    :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
-    :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
-    :when  (not (and (g/gayboy-in-channel? channel-id)
-                     (g/is-gayboy-able-to-handle-this-message? content)))
-    :let [fx (fsm/accept-message! (prepare-event channel-id (:id author) content))]
-    (not-empty fx) (fx/run-fxs fx replier)))
 ;; relies message it receives via channel to discord
 (defrecord msgOutput
            [config connection chan]
