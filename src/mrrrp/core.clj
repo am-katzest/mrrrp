@@ -92,18 +92,37 @@
                      (g/is-gayboy-able-to-handle-this-message? content)))
     :let [fx (fsm/accept-message! (prepare-event channel-id (:id author) content))]
     (not-empty fx) (fx/run-fxs fx replier)))
+;; relies message it receives via channel to discord
+(defrecord msgOutput
+           [config connection chan]
+  component/Lifecycle
+  (start [component]
+    (let [chan (a/chan (a/sliding-buffer 3))
+          rest (:rest connection)]
+      (a/go-loop []
+        (when-let [{:keys [channel text]} (a/<! chan)]
+          (log/info "responding" (str text))
+          @(discord-rest/create-message! rest channel :content (str text))
+          (recur)))
+      (assoc component :chan chan)))
+  (stop [component]
+    (a/close! (:chan component))
+    component))
 
 (defn run-bot!
   "pulls events off of the channel and calls
   handle-event with them, stops when it sees a :disconnect event."
-  [connection config]
-  (loop []
-    (let [[event-type event-data] (a/<!! (:events connection))]
-      (case event-type
-        :disconnect (deliver event-data nil)
-        :message-create (do (handle-message config connection event-data)
-                            (recur))
-        (recur)))))
+  [{:keys [config connection msgout]}]
+  (let [cfg (assoc config :bot-id (:bot-id connection))]
+    (a/go-loop [state {}]
+      (let [[event-type event-data] (a/<! (:events connection))]
+        (case event-type
+          :disconnect (deliver event-data nil)
+          :message-create (let [[state' fxs] (handle-message cfg state event-data)]
+                            (doseq [fx fxs]
+                              (a/>! (:chan msgout) fx))
+                            (recur state'))
+          (recur state))))))
 
 (defn stop-bot!
   "if event channel is still open, waits for the bot thread to exit"
@@ -114,11 +133,11 @@
 
 (defrecord Responder
     ;; decides if/how to respond to each message
-           [config connection]
+           [config connection msgout]
   component/Lifecycle
   (start [component]
     (log/info "starting responder")
-    (future (run-bot! (:connection component) config))
+    (run-bot! component)
     component)
   (stop [component]
     (log/info "stopping responder")
@@ -149,11 +168,15 @@
         conf (dissoc config :secrets)]
     (component/system-map
      :connection (map->DCConnection {:token token})
+     :msgout (component/using
+              (map->msgOutput {:config conf})
+              [:connection])
      :responder (component/using
                  (map->Responder {:config conf})
-                 {:connection :connection}))))
+                 [:connection :msgout]))))
 
 (defonce running-system (atom nil))
+
 (defn run-system! [args]
   (try
     (let [config (read-config args)
