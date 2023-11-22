@@ -13,13 +13,15 @@
    :config {}
    :state {}}                           ; modifications are preserved
 
+(def terminators [(fn [context] (not-empty (:fx context)))
+                  (fn [context] (:stop context))])
 
-(def terminators [(fn [context] (not-empty (:fx context)))])
-
-(def always-meow
+(def meowback-stub
   {:enter
    (fn [context]
-     (assoc context :fx [[:reply "meow"]]))})
+     (if (-> context :message :content (= "meow!"))
+       (assoc context :fx [[:reply "meow!"]])
+       context))})
 
 (def unpack-message
   {:enter
@@ -40,26 +42,32 @@
      (update context :fx (fn [fx]
                            (map (partial add-fx-context (-> context :message :channel)) fx))))})
 
+(def update-blacklist-interceptor
+  {:enter
+   (fn [{:keys [message] :as context}]
+     (case (:content message)
+       "start meowing" (update-in context [:state :blacklist] disj (:channel message))
+       "stop meowing" (update-in context [:state :blacklist] conj (:channel message))
+       context))})
+
+(def apply-blacklist-interceptor
+  {:enter
+   (fn [context]
+     (if (contains? (-> context :state :blacklist) (-> context :message :channel))
+       (assoc context :stop true)
+       context))})
+
 (def interceptors (->> [unpack-message
                         postprocess-replies
-                        always-meow]
+                        update-blacklist-interceptor
+                        apply-blacklist-interceptor
+                        meowback-stub]
                        (map int/interceptor)))
-
-(def blacklist (atom #{}))
-
-(defn- stop-meowing [id]
-  (swap! blacklist conj id)
-  (log/info "blacklist is now " @blacklist))
-
-(defn- start-meowing [id]
-  (swap! blacklist disj id)
-  (log/info "blacklist is now " @blacklist))
 
 (defn prepare-event [cid uid msg]
   {:cid cid
    :uid uid
    :msg msg})
-
 
 (defn handle-message
   "takes state, config and message and returns updated state and fxs"

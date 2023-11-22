@@ -33,63 +33,92 @@
 
 (defn in->out [config msg]
   (->> msg
-       (s/handle-message config s/initial-state )
+       (s/handle-message config s/initial-state)
        :fx
        (map :text)))
 
-(def context1 {:event (wrap-msg "chan1" "user1" "meow!")
-               :state s/initial-state
-               :config conf})
-(def context2 {:event (wrap-msg "chan1" "user1" "human stuff")
-               :message {:author "user1"
-                         :channel "chan1"
-                         :content "meow!"}
-               :state s/initial-state
-               :config conf})
+(def context-raw {:event (wrap-msg "chan1" "user1" "meow!")
+                  :state s/initial-state
+                  :config conf})
+(def context-formatted {:event (wrap-msg "chan1" "user1" "human stuff")
+                        :message {:author "user1"
+                                  :channel "chan1"
+                                  :content "meow!"}
+                        :state s/initial-state
+                        :config conf})
 
 (deftest formatting-test
   (is (= {:author "user1"
           :channel "chan1"
-          :content "meow!"} (:message ((:enter s/unpack-message) context1)))))
+          :content "meow!"} (:message ((:enter s/unpack-message) context-raw)))))
 
 (deftest output-formatting-test
-  (is (= [] (:fx ((:leave s/postprocess-replies) (assoc context2 :fx nil)))))
+  (is (= [] (:fx ((:leave s/postprocess-replies) (assoc context-formatted :fx nil)))))
   (is (is (= [{:type :reply, :channel "chan1", :text "meow"}
               {:type :reply, :channel "chan1", :text "uwu"}]
-             (:fx ((:leave s/postprocess-replies) (assoc context2 :fx [[:reply "meow"]
-                                                                     [:reply "uwu"]])))))))
+             (:fx ((:leave s/postprocess-replies) (assoc context-formatted :fx [[:reply "meow"]
+                                                                                [:reply "uwu"]])))))))
+
+(deftest blacklist-test
+  (testing "blacklisting"
+    (is (= #{"chan1" "other"}
+           (->>  (-> context-formatted
+                     (assoc-in [:state :blacklist] #{"other"})
+                     (assoc-in  [:message :content] "stop meowing"))
+                 ((:enter s/update-blacklist-interceptor))
+                 :state
+                 :blacklist))))
+  (testing "unblacklisting"
+    (is (= #{"other"}
+           (->>  (-> context-formatted
+                     (assoc-in [:state :blacklist] #{"other"})
+                     (assoc-in  [:message :content] "start meowing"))
+                 ((:enter s/update-blacklist-interceptor))
+                 :state
+                 :blacklist))))
+  (testing "applying"
+    (is (not
+         (->>  (-> context-formatted
+                   (assoc-in [:state :blacklist] #{"other"}))
+               ((:enter s/apply-blacklist-interceptor))
+               :stop)))
+    (is (= true
+           (->>  (-> context-formatted
+                     (assoc-in [:state :blacklist] #{"chan1"}))
+                 ((:enter s/apply-blacklist-interceptor))
+                 :stop)))))
 
 (deftest msg-handler-test
   (is (= [] (:fx (s/handle-message
-              conf s/initial-state
-              {:channel-id "channel"
-               :content "--"
-               :author {:id "user"}}))))
-    (is (= [{:fx :reply
-             :channel "channel"
-             :text "meow!"}] (:fx (s/handle-message
-                               conf s/initial-state
-                               {:channel-id "channel"
-                                :content "meow!"
-                                :author {:id "user"}}))))
-    (is (= [] (in->out conf (wrap-msg "channel" "user" "normal words"))))
-    (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow!"))))
-    (testing "blacklist"
-      (testing "full interaction"
-        (is (= [["meow!"] [] [] [] ["meow!"]]
-               (->> ["meow!" "stop meowing" "meow!" "start meowing" "meow!"]
-                    (user-in-channel "user" "channel" )
-                    (run-messages-through conf)
-                    (output-texts)))))
-      (testing "blacklisting"
-        (is (= [["meow!"] [] []]
-               (->> ["meow!" "stop meowing" "meow!"]
-                    (user-in-channel "user" "channel" )
-                    (run-messages-through conf)
-                    (output-texts)))))
-      (testing "unblacklisting when no blacklist"
-        (is (= [["meow!"] [] ["meow!"]]
-               (->> ["meow!" "start meowing" "meow!"]
-                    (user-in-channel "user" "channel" )
-                    (run-messages-through conf)
-                    (output-texts)))))))
+                  conf s/initial-state
+                  {:channel-id "channel"
+                   :content "--"
+                   :author {:id "user"}}))))
+  (is (= [{:type :reply
+           :channel "channel"
+           :text "meow!"}] (:fx (s/handle-message
+                                 conf s/initial-state
+                                 {:channel-id "channel"
+                                  :content "meow!"
+                                  :author {:id "user"}}))))
+  (is (= [] (in->out conf (wrap-msg "channel" "user" "normal words"))))
+  (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow!"))))
+  (testing "blacklist"
+    (testing "full interaction"
+      (is (= [["meow!"] [] [] [] ["meow!"]]
+             (->> ["meow!" "stop meowing" "meow!" "start meowing" "meow!"]
+                  (user-in-channel "user" "channel")
+                  (run-messages-through conf)
+                  (output-texts)))))
+    (testing "blacklisting"
+      (is (= [["meow!"] [] []]
+             (->> ["meow!" "stop meowing" "meow!"]
+                  (user-in-channel "user" "channel")
+                  (run-messages-through conf)
+                  (output-texts)))))
+    (testing "unblacklisting when no blacklist"
+      (is (= [["meow!"] [] ["meow!"]]
+             (->> ["meow!" "start meowing" "meow!"]
+                  (user-in-channel "user" "channel")
+                  (run-messages-through conf)
+                  (output-texts)))))))
