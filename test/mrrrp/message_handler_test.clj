@@ -121,4 +121,10 @@
              (->> ["meow!" "start meowing" "meow!"]
                   (user-in-channel "user" "channel")
                   (run-messages-through conf)
+                  (output-texts)))))
+    (testing "ignoring-self"
+      (is (= [["meow!"] []]
+             (->> [["other" "meow!"] ["self" "meow!"]]
+                  (in-channel "channel")
+                  (run-messages-through conf)
                   (output-texts)))))))

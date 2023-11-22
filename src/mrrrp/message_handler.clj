@@ -57,8 +57,16 @@
        (assoc context :stop true)
        context))})
 
+(def ignore-self-interceptor
+  {:enter
+   (fn [context]
+     (if (= (-> context :message :author) (-> context :config :bot-id))
+       (assoc context :stop true)
+       context))})
+
 (def interceptors (->> [unpack-message
                         postprocess-replies
+                        ignore-self-interceptor
                         update-blacklist-interceptor
                         apply-blacklist-interceptor
                         meowback-stub]
