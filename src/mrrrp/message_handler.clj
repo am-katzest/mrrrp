@@ -19,7 +19,7 @@
 (def meowback-stub
   {:enter
    (fn [context]
-     (if (-> context :message :content (= "meow!"))
+     (if (->> context :message :content #{"meow!" "meow"})
        (assoc context :fx [[:reply "meow!"]])
        context))})
 
@@ -36,7 +36,7 @@
     :reply {:type :reply :channel channel :text (str (second fx))}
     fx))
 
-(def postprocess-replies
+(def postprocess-replies-interceptor
   {:leave
    (fn [context]
      (update context :fx (fn [fx]
@@ -64,11 +64,15 @@
        (assoc context :stop true)
        context))})
 
+
+
 (def interceptors (->> [unpack-message
-                        postprocess-replies
+                        postprocess-replies-interceptor
                         ignore-self-interceptor
                         update-blacklist-interceptor
                         apply-blacklist-interceptor
+                        g/update-gayboy-interceptor
+                        g/ignore-gayboy-interceptor
                         meowback-stub]
                        (map int/interceptor)))
 
@@ -107,4 +111,5 @@
         fsm/accept-message!
         (map (partial add-fx-context channel-id)))]))
 
-(def initial-state {:blacklist #{}})
+(def initial-state {:blacklist #{}
+                    :gayboy-channels #{}})

@@ -1,4 +1,6 @@
 {:rate-limit {:count 5
               :period 60}
+ :gayboy {:id #{"204255221017214977"}
+          :meowback-chance 0.1}
  :admins ["499998133497888768"]
  :secrets #include "MEOWKEN"}

@@ -2,8 +2,10 @@
   (:require [mrrrp.message-handler :as s]
             [clojure.test :refer :all]))
 
-(def state s/initial-state)
-(def conf {:bot-id "self"})
+
+(def conf {:bot-id "self"
+           :gayboy {:id #{"gayboy"}
+                    :meowback-chance 0.0}})
 
 (defn wrap-msg "prepares message map, inverse of the `unpack-message` interceptor"
   [channel author content]
@@ -53,21 +55,13 @@
           :content "meow!"} (:message ((:enter s/unpack-message) context-raw)))))
 
 (deftest output-formatting-test
-  (is (= [] (:fx ((:leave s/postprocess-replies) (assoc context-formatted :fx nil)))))
+  (is (= [] (:fx ((:leave s/postprocess-replies-interceptor) (assoc context-formatted :fx nil)))))
   (is (is (= [{:type :reply, :channel "chan1", :text "meow"}
               {:type :reply, :channel "chan1", :text "uwu"}]
-             (:fx ((:leave s/postprocess-replies) (assoc context-formatted :fx [[:reply "meow"]
+             (:fx ((:leave s/postprocess-replies-interceptor) (assoc context-formatted :fx [[:reply "meow"]
                                                                                 [:reply "uwu"]])))))))
 
 (deftest blacklist-test
-  (testing "blacklisting"
-    (is (= #{"chan1" "other"}
-           (->>  (-> context-formatted
-                     (assoc-in [:state :blacklist] #{"other"})
-                     (assoc-in  [:message :content] "stop meowing"))
-                 ((:enter s/update-blacklist-interceptor))
-                 :state
-                 :blacklist))))
   (testing "unblacklisting"
     (is (= #{"other"}
            (->>  (-> context-formatted
@@ -97,12 +91,13 @@
   (is (= [{:type :reply
            :channel "channel"
            :text "meow!"}] (:fx (s/handle-message
-                                 conf s/initial-state
-                                 {:channel-id "channel"
-                                  :content "meow!"
-                                  :author {:id "user"}}))))
+           conf s/initial-state
+           {:channel-id "channel"
+            :content "meow!"
+            :author {:id "user"}}))))
   (is (= [] (in->out conf (wrap-msg "channel" "user" "normal words"))))
   (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow!"))))
+  (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow"))))
   (testing "blacklist"
     (testing "full interaction"
       (is (= [["meow!"] [] [] [] ["meow!"]]
@@ -125,6 +120,12 @@
     (testing "ignoring-self"
       (is (= [["meow!"] []]
              (->> [["other" "meow!"] ["self" "meow!"]]
+                  (in-channel "channel")
+                  (run-messages-through conf)
+                  (output-texts)))))
+    (testing "ignoring-gayboy"
+      (is (= [["meow!"] [] []]
+             (->> [["other" "meow"] ["gayboy" "meow"] ["other" "meow"]]
                   (in-channel "channel")
                   (run-messages-through conf)
                   (output-texts)))))))

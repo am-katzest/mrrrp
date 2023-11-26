@@ -3,22 +3,36 @@
    [clojure.tools.logging :as log]
    [mrrrp.meowperhonsion :as re]))
 
+;; it's called yagpdb or something, but on one server it's named "gayboy" so i remember it as such
 (def gayboy-meow (re/re-str "^" re/meowgex "$"))
-(str gayboy-meow)
-(def gayboy-id  "204255221017214977")   ;TODO move to config
+#_(str gayboy-meow)
 
-(def channels-where-gayboy-meows (atom #{}))
-
-(defn not-gayboy [uid] (not= gayboy-id uid))
-
-(defn gayboy-in-channel? [cid] (@channels-where-gayboy-meows cid))
 
 (defn is-gayboy-able-to-handle-this-message? [msg]
   (or (re/matches? gayboy-meow msg)
       (re/matches? #".*(:3|OwO|\^w\^|UwU).*" msg)))
-(defn maybe-update-gayboy-meowing-area [uid cid msg]
-  (when (and (= uid gayboy-id)
-             ;; it means it meowed back at someone
-             (is-gayboy-able-to-handle-this-message? msg))
-    (swap! channels-where-gayboy-meows conj cid)
-    (log/info "channels-where-gayboy-meows is now " @channels-where-gayboy-meows)))
+
+
+
+(defn author-is-gayboy? [context]
+  (contains? (-> context :config :gayboy :id)
+             (-> context :message :author)))
+
+(def update-gayboy-interceptor
+  {:enter
+   (fn [{:keys [message] :as context}]
+     (if (and (author-is-gayboy? context)
+              (is-gayboy-able-to-handle-this-message? (:content message)))
+       (update-in context [:state :gayboy-channels] conj (:channel message))
+       context))})
+
+(def ignore-gayboy-interceptor
+  {:enter
+   (fn [{:keys [message config] :as context}]
+     (if (and (contains? (-> context :state :gayboy-channels) (:channel message))
+              (is-gayboy-able-to-handle-this-message? (:content message)))
+       (if (and (author-is-gayboy? context)
+                (> (-> config :gayboy :meowback-chance) (rand)))
+         context
+         (assoc context :stop true))
+       context))})
