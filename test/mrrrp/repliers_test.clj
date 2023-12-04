@@ -1,5 +1,5 @@
-(ns mrrrp.additional-repliers-test
-  (:require [mrrrp.additional-repliers :as sut]
+(ns mrrrp.repliers-test
+  (:require [mrrrp.repliers :as sut]
             [clojure.test :refer [deftest testing is]]))
 
 (deftest nuh-uh-test

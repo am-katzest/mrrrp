@@ -4,9 +4,7 @@
             [clojure.tools.logging :as log]
             [io.pedestal.interceptor :as int]
             [io.pedestal.interceptor.chain :as chain]
-            [better-cond.core :as b]
-            [mrrrp.gayboy :as g]
-            [mrrrp.slowdown :as slow]))
+            [mrrrp.gayboy :as g]))
 
 ;; input context map:
 #_{:event-data  {}                      ; what discord gives

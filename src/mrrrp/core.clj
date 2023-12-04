@@ -10,7 +10,6 @@
    [discljord.messaging :as discord-rest]
    [malli.core :as m]
    [malli.error :as me]
-   [mrrrp.additional-repliers]
    [mrrrp.message-handler :refer [handle-message initial-state]]))
 
 ;; connection to discord

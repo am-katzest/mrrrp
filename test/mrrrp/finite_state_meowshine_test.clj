@@ -24,7 +24,7 @@
 (def meow
   (s/make-fsm meow-machine
               (constantly nil)
-              :msg))
+              :content))
 
 (deftest inserting-fx
   (is (= [[:reply "meow"]]
@@ -36,18 +36,11 @@
        (as->
         (fsm/initialize meow-machine) -
          (fsm/transition meow-machine - {:type :don't})
-         (:fx -))))
-  (with-redefs [s/execs (atom s/empty-fsms)]
-    ;; imperative stuff :<
-    (is (= [] (:state @s/execs)))
-    (s/reg-fn! (constantly :reply) :reply)
-    (let [[{:keys [type function]}] (:state  @s/execs)]
-      (is (= :function type))
-      (is (ifn?  function)))))
+         (:fx -)))))
 
 (deftest event-apply-fsm
-  (let [e1 {:uid 0 :cid 0 :msg :don't}
-        e2  {:uid 0 :cid 0 :msg :meow}
+  (let [e1 {:author 0 :channel 0 :content :don't}
+        e2  {:author 0 :channel 0 :content :meow}
         meow-e1 (s/apply-event e1 meow)
         meow-e2 (s/apply-event e2 meow)]
     (testing "state was initialised"
@@ -64,30 +57,27 @@
         (is (= :A (-> s2  :states (get nil) :_state)))))))
 
 (deftest group-of-fsms
-  (let [e1 {:uid 0 :cid 0 :msg :don't}
-        e2  {:uid 0 :cid 0 :msg :meow}
-        group (-> s/empty-fsms
-                  (s/add-exec meow)
-                  (s/add-exec meow))]
+  (let [e1 {:author 0 :channel 0 :content :don't}
+        e2  {:author 0 :channel 0 :content :meow}
+        group [meow meow]]
     (testing "creation"
       (is (= [:meow :meow]
-             (->> group :state (map :id)))))
+             (->> group (map :id)))))
     (testing "gathering-fx"
       (is (empty? (:fx (s/run-event-through group e1))))
       (is (= [[:reply "meow"] [:reply "meow"]]
              (:fx (s/run-event-through group e2)))))))
 
-(defn mrow [{:keys [msg]}] (if (= msg :meow) [[:reply "mrow"]] []))
+(defn mrow [{:keys [content]}] (if (= content :meow) [[:reply "mrow"]] []))
 
 (deftest group-of-fns
-  (let [e1 {:uid 0 :cid 0 :msg :don't}
-        e2  {:uid 0 :cid 0 :msg :meow}
-        group (-> s/empty-fsms
-                  (s/add-exec (s/make-fn mrow :mrow))
-                  (s/add-exec meow))]
+  (let [e1 {:author 0 :channel 0 :content :don't}
+        e2  {:author 0 :channel 0 :content :meow}
+        group [(s/make-fn mrow :mrow)
+               meow]]
     (testing "creation"
       (is (= [:mrow :meow]
-             (->> group :state (map :id)))))
+             (->> group (map :id)))))
     (testing "gathering-fx"
       (is (empty? (:fx (s/run-event-through group e1))))
       (is (= [[:reply "mrow"] [:reply "meow"]]
