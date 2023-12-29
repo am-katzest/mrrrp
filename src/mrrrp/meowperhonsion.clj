@@ -170,8 +170,8 @@
      [])))
 
 (defn wrap-answer [event]
-  (let [{:keys [msg]} event
-        ans (answer msg)]
+  (let [{:keys [content]} event
+        ans (answer content)]
     (mapv (fn [reply] [:reply reply]) ans)))
 
 ;; (->> "/etc/dictionaries-common/words" slurp s/split-lines (filter #(re-matches meowgex-with-junk %)) (map println))

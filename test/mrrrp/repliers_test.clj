@@ -4,20 +4,20 @@
 
 (deftest nuh-uh-test
   (testing "false"
-    (is (= [] (sut/nuh-uh {:msg ""})))
-    (is (= [] (sut/nuh-uh {:msg "meow"})))
-    (is (= [] (sut/nuh-uh {:msg "nuh uh :3"}))))
+    (is (= [] (sut/nuh-uh {:content ""})))
+    (is (= [] (sut/nuh-uh {:content "meow"})))
+    (is (= [] (sut/nuh-uh {:content "nuh uh :3"}))))
   (testing "true"
-    (let [a1 (sut/nuh-uh {:msg "nuh uh"})
-          a2 (sut/nuh-uh {:msg "nuh uh "})]
+    (let [a1 (sut/nuh-uh {:content "nuh uh"})
+          a2 (sut/nuh-uh {:content "nuh uh "})]
       (is (= a1 a2))
       (is (= :reply (ffirst a1)))
       (is (re-matches #"https.*png" (second (first a1))))))
   (testing "asia is getting smart"
-    (let [a1 (sut/nuh-uh {:msg "nuh  uh"})
-          a2 (sut/nuh-uh {:msg " nuh  uh "})]
+    (let [a1 (sut/nuh-uh {:content "nuh  uh"})
+          a2 (sut/nuh-uh {:content " nuh  uh "})]
       (is (= [[:reply "yuh  uh"]] a1 a2))))
   (testing "asia is getting smarter"
-    (let [a1 (sut/nuh-uh {:msg "nuh   uh"})
-          a2 (sut/nuh-uh {:msg " nuh   uh "})]
+    (let [a1 (sut/nuh-uh {:content "nuh   uh"})
+          a2 (sut/nuh-uh {:content " nuh   uh "})]
       (is (= [[:reply "yuh-uh >:3"]] a1 a2)))))

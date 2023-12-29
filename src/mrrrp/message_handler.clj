@@ -2,6 +2,7 @@
   (:require [mrrrp.effects :as fx]
             [mrrrp.finite-state-meowshine :as fsm]
             [clojure.tools.logging :as log]
+            [mrrrp.repliers :as repliers]
             [io.pedestal.interceptor :as int]
             [io.pedestal.interceptor.chain :as chain]
             [mrrrp.gayboy :as g]))
@@ -20,6 +21,16 @@
      (if (->> context :message :content #{"meow!" "meow"})
        (assoc context :fx [[:reply "meow!"]])
        context))})
+
+(def fsm-repliers
+  {:enter
+   (fn [context]
+     (let [state (-> context :state :fsm-states)
+           {:keys [state fx]} (fsm/run-event-through state (:message context))
+           context' (assoc-in context [:state :fsm-states] state)]
+       (println fx)
+       (cond-> context'
+         fx (assoc :fx fx))))})
 
 (def unpack-message
   {:enter
@@ -71,13 +82,10 @@
                         apply-blacklist-interceptor
                         g/update-gayboy-interceptor
                         g/ignore-gayboy-interceptor
+                        fsm-repliers
                         meowback-stub]
                        (map int/interceptor)))
 
-(defn prepare-event [cid uid msg]
-  {:cid cid
-   :uid uid
-   :msg msg})
 
 (defn handle-message
   "takes state, config and message and returns updated state and fxs"
@@ -110,4 +118,5 @@
         (map (partial add-fx-context channel-id)))]))
 
 (def initial-state {:blacklist #{}
-                    :gayboy-channels #{}})
+                    :gayboy-channels #{}
+                    :fsm-states repliers/repliers})
