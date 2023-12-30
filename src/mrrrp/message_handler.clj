@@ -47,10 +47,11 @@
 (def update-blacklist-interceptor
   {:enter
    (fn [{:keys [message] :as context}]
-     (case (:content message)
-       "start meowing" (update-in context [:state :blacklist] disj (:channel message))
-       "stop meowing" (update-in context [:state :blacklist] conj (:channel message))
-       context))})
+     (let [stop-ctx (assoc context :stop true)]
+      (case (:content message)
+        "start meowing" (update-in stop-ctx [:state :blacklist] disj (:channel message))
+        "stop meowing" (update-in stop-ctx [:state :blacklist] conj (:channel message))
+        context)))})
 
 (def apply-blacklist-interceptor
   {:enter
