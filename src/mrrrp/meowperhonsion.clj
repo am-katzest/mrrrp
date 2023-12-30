@@ -137,6 +137,7 @@
    (b/cond
      :let [s (strip-trailing-catface input)]
      (= "*meows*" s) ["*meows back*"]
+     (= "meow!" s) ["meow!"]
      (= "*barks*" s) ["*barks back*"]
      (= "*hiss*" s) ["m-meow? ;-;"]
      ;; single meows

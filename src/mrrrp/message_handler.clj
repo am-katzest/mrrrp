@@ -15,13 +15,6 @@
 (def terminators [(fn [context] (not-empty (:fx context)))
                   (fn [context] (:stop context))])
 
-(def meowback-stub
-  {:enter
-   (fn [context]
-     (if (->> context :message :content #{"meow!" "meow"})
-       (assoc context :fx [[:reply "meow!"]])
-       context))})
-
 (def fsm-repliers
   {:enter
    (fn [context]
@@ -82,8 +75,7 @@
                         apply-blacklist-interceptor
                         g/update-gayboy-interceptor
                         g/ignore-gayboy-interceptor
-                        fsm-repliers
-                        meowback-stub]
+                        fsm-repliers]
                        (map int/interceptor)))
 
 
