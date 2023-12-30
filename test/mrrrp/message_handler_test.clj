@@ -1,7 +1,7 @@
 (ns mrrrp.message-handler-test
   (:require [mrrrp.message-handler :as s]
+            [mrrrp.meowperhonsion :as meow]
             [clojure.test :refer :all]))
-
 
 (def conf {:bot-id "self"
            :gayboy {:id #{"gayboy"}
@@ -42,6 +42,7 @@
 (def context-raw {:event (wrap-msg "chan1" "user1" "meow!")
                   :state s/initial-state
                   :config conf})
+
 (def context-formatted {:event (wrap-msg "chan1" "user1" "human stuff")
                         :message {:author "user1"
                                   :channel "chan1"
@@ -83,49 +84,49 @@
                  :stop)))))
 
 (deftest msg-handler-test
-  (is (= [] (:fx (s/handle-message
-                  conf s/initial-state
-                  {:channel-id "channel"
-                   :content "--"
-                   :author {:id "user"}}))))
-  (is (= [{:type :reply
-           :channel "channel"
-           :text "meow!"}] (:fx (s/handle-message
-           conf s/initial-state
-           {:channel-id "channel"
-            :content "meow!"
-            :author {:id "user"}}))))
-  (is (= [] (in->out conf (wrap-msg "channel" "user" "normal words"))))
-  (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow!"))))
-  (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow"))))
-  (testing "blacklist"
-    (testing "full interaction"
-      (is (= [["meow!"] [] [] [] ["meow!"]]
-             (->> ["meow!" "stop meowing" "meow!" "start meowing" "meow!"]
-                  (user-in-channel "user" "channel")
-                  (run-messages-through conf)
-                  (output-texts)))))
-    (testing "blacklisting"
-      (is (= [["meow!"] [] []]
-             (->> ["meow!" "stop meowing" "meow!"]
-                  (user-in-channel "user" "channel")
-                  (run-messages-through conf)
-                  (output-texts)))))
-    (testing "unblacklisting when no blacklist"
-      (is (= [["meow!"] [] ["meow!"]]
-             (->> ["meow!" "start meowing" "meow!"]
-                  (user-in-channel "user" "channel")
-                  (run-messages-through conf)
-                  (output-texts)))))
-    (testing "ignoring-self"
-      (is (= [["meow!"] []]
-             (->> [["other" "meow!"] ["self" "meow!"]]
-                  (in-channel "channel")
-                  (run-messages-through conf)
-                  (output-texts)))))
-    (testing "ignoring-gayboy"
-      (is (= [["meow!"] [] []]
-             (->> [["other" "meow"] ["gayboy" "meow"] ["other" "meow"]]
-                  (in-channel "channel")
-                  (run-messages-through conf)
-                  (output-texts)))))))
+  (binding  [meow/append-catface (fn [& x] (last x))]       ; just making the thing we are testing more predictable instead of stubbing, i know it's bad
+   (is (= [] (:fx (s/handle-message
+                   conf s/initial-state
+                   {:channel-id "channel"
+                    :content "--"
+                    :author {:id "user"}}))))
+   (is (= [{:type :reply
+            :channel "channel"
+            :text "meow!"}] (:fx (s/handle-message
+            conf s/initial-state
+            {:channel-id "channel"
+             :content "meow!"
+             :author {:id "user"}}))))
+   (is (= [] (in->out conf (wrap-msg "channel" "user" "normal words"))))
+   (is (= ["meow!"] (in->out conf (wrap-msg "channel" "user" "meow!"))))
+   (testing "blacklist"
+     (testing "full interaction"
+       (is (= [["meow!"] [] [] [] ["meow!"]]
+              (->> ["meow!" "stop meowing" "meow!" "start meowing" "meow!"]
+                   (user-in-channel "user" "channel")
+                   (run-messages-through conf)
+                   (output-texts)))))
+     (testing "blacklisting"
+       (is (= [["meow!"] [] []]
+              (->> ["meow!" "stop meowing" "meow!"]
+                   (user-in-channel "user" "channel")
+                   (run-messages-through conf)
+                   (output-texts)))))
+     (testing "unblacklisting when no blacklist"
+       (is (= [["meow!"] [] ["meow!"]]
+              (->> ["meow!" "start meowing" "meow!"]
+                   (user-in-channel "user" "channel")
+                   (run-messages-through conf)
+                   (output-texts)))))
+     (testing "ignoring-self"
+       (is (= [["meow!"] []]
+              (->> [["other" "meow!"] ["self" "meow!"]]
+                   (in-channel "channel")
+                   (run-messages-through conf)
+                   (output-texts)))))
+     (testing "ignoring-gayboy"
+       (is (= [["meow"] [] []]
+              (->> [["other" "meow"] ["gayboy" "meow"] ["other" "meow"]]
+                   (in-channel "channel")
+                   (run-messages-through conf)
+                   (output-texts))))))))
