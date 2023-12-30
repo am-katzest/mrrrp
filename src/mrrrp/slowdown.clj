@@ -1,41 +1,57 @@
 (ns mrrrp.slowdown
   (:require
    [clojure.tools.logging :as log]
+   [clojure.core.async :as a]
    [better-cond.core :as b]))
 ;; discord auto-mutes bot when it sends more than 5 messages in 5 seconds,
 ;; and used api wrapper doesn't handle this  ;-;
 
-(def ^:dynamic *max-messages* 3)
-(def ^:dynamic *timeout* 15000)
+;; solution
 
-(defn clean [lst time]
-  (remove #(> (- time *timeout*) %) lst))
+;; incoming messages are split into channels for welp. channels,
+;; each of them is handled by an (created as needed) instance of these things
 
-(defn time-to-next-expire [lst time]
+(defn clean "discard times too old to matter from :previous" [{:keys [previous conf time] :as state}]
+  (let [cleaned (remove #(> (- time (:period conf)) %) previous)]
+    (log/debug previous "->" cleaned)
+    (assoc state :previous cleaned)))
+
+(defn accept-time "move current time to :previous" [{:keys [time] :as state}]
+  (update state :previous conj time))
+
+(defn update-time [state]
+  (assoc state :time (System/currentTimeMillis)))
+
+(defn time-to-next-expire [{:keys [previous conf time]}]
   (b/cond
-    (empty? lst) 0
-    :let [earliest (apply min lst)
-          earliest-expire (+ earliest *timeout*)
+    (empty? previous) 0
+    :let [earliest (apply min previous)
+          earliest-expire (+ earliest (:period conf))
           wait-time (- earliest-expire time)]
     (pos? wait-time) wait-time
     :else 0))
 
-(defn- execute-when-ready [lst f]
-  (let [time (System/currentTimeMillis)
-        lst (clean lst time)]
-    (log/debugf "sent %d messages within time window" (count lst))
-    (if (>= (count lst) *max-messages*)
-      (do
-        (log/debug "rate limiting myself")
-        (Thread/sleep (min (time-to-next-expire lst time) *timeout*))
-        (recur lst f))
-      (do (f)
-          (conj lst time)))))
+(defn run [update-time strategy conf input output]
+  (let [state {:conf conf
+               :previous []}]
+    (a/go-loop [state state]
+      (if-let [val (a/<! input)]
+        (let [state' (-> state update-time clean)
+              [decision time] (strategy state')]
+          (log/debug "decision on `" val "` is " decision)
+          (case decision
+            :drop (recur state')
+            :pass (do
+                    (a/>! output val)
+                    (recur (accept-time state')))
+            :wait (do (a/<! (a/timeout time)) ; sleep
+                      (a/>! output val)
+                      (recur (-> state' update-time accept-time)))))
+        (a/close! output)))))
 
-(def waitlist "id -> agent" (atom {}))
-
-(defn add "executes function as soon as possible" [id f]
-  (when-not (@waitlist id)
-    (swap! waitlist assoc id (agent '())))
-  (let [a (@waitlist id)]
-    (send a execute-when-ready f)))
+(defn dropping-strategy
+  [{:keys [conf previous]}]
+  (prn conf "--" previous)
+  [(if (>= (count previous) (:count conf))
+     :drop
+     :pass)])
