@@ -51,7 +51,15 @@
 
 (defn dropping-strategy
   [{:keys [conf previous]}]
-  (prn conf "--" previous)
   [(if (>= (count previous) (:count conf))
      :drop
      :pass)])
+
+(defn dropping-randomly-strategy
+  [{:keys [conf previous]}]
+  (let [current (count previous)
+        max (:count conf)
+        ratio (/ current max)
+        probability (- (* 2  ratio) 1)]
+    ;; probability to drop is still 0% when halfway to timeout, reaches 100% when at the timeout
+    [(if (> (rand) probability) :pass :drop)]))

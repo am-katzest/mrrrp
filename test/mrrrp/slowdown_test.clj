@@ -36,3 +36,24 @@
          (run-msg-through s/dropping-strategy default-conf
                           ["meow" "meow" "mreu" "mraow"]
                           [0 5 6 11]))))
+
+(deftest random-test
+  (is (= ["meow" "meow"]
+         (run-msg-through s/dropping-randomly-strategy
+                          (assoc default-conf :count 2)
+                          ["meow" "meow" "mraw" "mraw"]
+                          [0 1 2 3])))
+  (is (= ["meow" "meow" "mraw" "mraw"]
+         (run-msg-through s/dropping-randomly-strategy
+                          (assoc default-conf :count 10)
+                          ["meow" "meow" "mraw" "mraw"]
+                          [0 1 2 3])))
+  (is (not=
+       (run-msg-through s/dropping-randomly-strategy
+                        {:period 20 :count 20}
+                        (map str (range 20))
+                        (range 20))
+       (run-msg-through s/dropping-randomly-strategy
+                        {:period 20 :count 20}
+                        (map str (range 20))
+                        (range 20)))))
