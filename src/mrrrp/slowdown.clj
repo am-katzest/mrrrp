@@ -32,9 +32,11 @@
     (pos? wait-time) wait-time
     :else 0))
 
-(defn run-slowdown [update-time strategy conf input output]
+(defn run-slowdown [conf input output]
   (let [state {:conf conf
-               :previous []}]
+               :previous []}
+        update-time (:update-time conf)
+        strategy (:strategy conf)]
     (a/go-loop [state state]
       (if-let [val (a/<! input)]
         (let [state' (-> state update-time clean)
@@ -72,38 +74,46 @@
 
 (defn respond [rest channel text]
   (log/info "responding `" (str text) "` to " channel)
-  @(discord-rest/create-message! rest channel :content text))
+  @#_{:clj-kondo/ignore [:invalid-arity]}
+   (discord-rest/create-message! rest channel :content text))
 
-(defn run-responder [conf chan]
+(defn run-responder [conf chan finished]
   (a/go-loop []
-    (when-let [{:keys [channel text]} (a/<! chan)]
-      ((:responder conf) (:rest conf) channel text)
-      (recur))))
+    (if-let [{:keys [channel text]} (a/<! chan)]
+      (do ((:responder conf) (:rest conf) channel text)
+          (recur))
+      (deliver finished true))))
 
 (defn new-channel [conf]
   (let [relay (a/chan 1)
-        input (a/chan 3)]
-    (run-responder conf relay)
+        input (a/chan 3)
+        finished (promise)]
+    (run-responder conf relay finished)
     ;; for now we just always use dropping-randomly-strategy
     ;; it's separated for ease of testing and possibly to
     ;; allow different strategies for different channels
-    (run-slowdown (:update-time conf) (:strategy conf) conf input relay)
-    input))
-
+    (run-slowdown conf input relay)
+    {:input input :finished finished}))
 
 (defn ensure-route-has-channel [conf channels msg]
   (if (contains? channels (:channel msg))
     channels
     (assoc channels (:channel msg) (new-channel conf))))
 
-(defn run-router [conf input-ch]
+(defn- close-all-channels [channels]
+  (doseq [chan (vals channels)]
+    (a/close! (:input chan)))
+  (doseq [chan (vals channels)]
+    @(:finished chan)))
+
+(defn run-router [conf input-ch finished]
   (a/go-loop [channels {}]
     (if-let [msg (a/<! input-ch)]
       (let [channels' (ensure-route-has-channel conf channels msg)]
-        (a/>! (channels' (:channel msg)) msg)
+        (a/>! (get-in channels' [(:channel msg) :input]) msg)
         (recur channels'))
-      (doseq [chan (vals channels)]
-        (a/close! chan)))))
+      (do (close-all-channels channels)
+          (deliver finished true)))))
 
 (def default-conf
   {:responder respond

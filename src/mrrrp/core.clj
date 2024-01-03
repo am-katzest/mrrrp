@@ -36,7 +36,7 @@
       (when (not started-correctly?)
         (close-connection! conn)
         (throw (Exception. "could not start the bot")))
-      (let [c (->> @(discord-rest/get-current-user! rest)
+      (let [c (->> @#_{:clj-kondo/ignore [:invalid-arity]} (discord-rest/get-current-user! rest)
                    :id
                    (assoc conn :bot-id)
                    (into component))]
@@ -57,11 +57,13 @@
           slowdown-conf (-> config
                             :rate-limit
                             (assoc :rest rest)
-                            (merge slowdown/default-conf))]
-      (slowdown/run-router slowdown-conf chan)
+                            (merge slowdown/default-conf))
+          finished (promise)]
+      (slowdown/run-router slowdown-conf chan finished)
       (assoc component :chan chan)))
   (stop [component]
     (a/close! (:chan component))
+    @(:finished component)
     component))
 
 (defn run-bot!
@@ -86,9 +88,8 @@
         closed? (a/put! channel [:disconnect p])]
     (or closed? @p)))
 
-(defrecord Responder
+(defrecord Responder [config connection msgout]
     ;; decides if/how to respond to each message
-           [config connection msgout]
   component/Lifecycle
   (start [component]
     (log/info "starting responder")

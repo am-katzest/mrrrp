@@ -4,7 +4,6 @@
    [clojure.core.async :as a]
    [mrrrp.slowdown :as s]))
 
-
 (defn output-times "pretends to be update-time, instead of giving current time, gives ones from list"
   [times]
   (let [queue (atom (cons nil times))]
@@ -14,11 +13,11 @@
 (defn run-msg-through [strategy conf messages times]
   (let [input-ch (a/to-chan!! messages)
         output-ch (a/chan 100)
-        timer (output-times times)]
-    (println "inserting")
-    (println "about to run")
-    (s/run-slowdown timer strategy conf input-ch output-ch)
-    (println "runed")
+        timer (output-times times)
+        conf (assoc conf
+                    :update-time timer
+                    :strategy strategy)]
+    (s/run-slowdown conf input-ch output-ch)
     (a/<!! (a/into [] output-ch))))
 
 (def default-conf {:period 10 :count 2 :strategy s/dropping-strategy})
@@ -58,7 +57,6 @@
                         (map str (range 20))
                         (range 20)))))
 
-
 (defn make-catcher "pretends to be respond, accumulates what it's called with"
   []
   (let [acc (atom [])]
@@ -70,10 +68,10 @@
         [responses catcher] (make-catcher)
         conf (merge conf
                     {:responder catcher
-                     :update-time (output-times times)})]
-    (s/run-router conf input-ch)
-    (println "uwu" @responses)
-    (Thread/sleep 10)
+                     :update-time (output-times times)})
+        finished (promise)]
+    (s/run-router conf input-ch finished)
+    @finished
     @responses))
 
 (deftest router-test
