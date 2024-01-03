@@ -10,6 +10,7 @@
    [discljord.messaging :as discord-rest]
    [malli.core :as m]
    [malli.error :as me]
+   [mrrrp.slowdown :as slowdown]
    [mrrrp.message-handler :refer [handle-message initial-state]]))
 
 ;; connection to discord
@@ -52,12 +53,12 @@
   component/Lifecycle
   (start [component]
     (let [chan (a/chan (a/sliding-buffer 3))
-          rest (:rest connection)]
-      (a/go-loop []
-        (when-let [{:keys [channel text]} (a/<! chan)]
-          (log/info "responding" (str text))
-          @(discord-rest/create-message! rest channel :content (str text))
-          (recur)))
+          rest (:rest connection)
+          slowdown-conf (-> config
+                            :rate-limit
+                            (assoc :rest rest)
+                            (merge slowdown/default-conf))]
+      (slowdown/run-router slowdown-conf chan)
       (assoc component :chan chan)))
   (stop [component]
     (a/close! (:chan component))
