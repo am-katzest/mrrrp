@@ -21,7 +21,6 @@
      (let [state (-> context :state :fsm-states)
            {:keys [state fx]} (fsm/run-event-through state (:message context))
            context' (assoc-in context [:state :fsm-states] state)]
-       (println fx)
        (cond-> context'
          fx (assoc :fx fx))))})
 

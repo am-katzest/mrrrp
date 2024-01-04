@@ -66,20 +66,27 @@
     @(:finished component)
     component))
 
-(defn run-bot!
+(defn run-messsage-handler-loop
   "pulls events off of the channel and calls
   handle-event with them, stops when it sees a :disconnect event."
   [{:keys [config connection msgout]}]
   (let [cfg (assoc config :bot-id (:bot-id connection))]
     (a/go-loop [state initial-state]
       (let [[event-type event-data] (a/<! (:events connection))]
+        (log/debug "event type is" event-type)
         (case event-type
           :disconnect (deliver event-data nil)
-          :message-create (let [[state' fxs] (handle-message cfg state event-data)]
+          :message-create (let [{state' :state fxs :fx}
+                                (try (handle-message cfg state event-data)
+                                     (catch Throwable t
+                                       (log/error "error while processing message" [event-type event-data] t)
+                                       {:state state :fx []}))]
                             (doseq [fx fxs]
+                              (log/debug "sending " fx " to msgout")
                               (a/>! (:chan msgout) fx))
                             (recur state'))
-          (recur state))))))
+          (recur state))
+        ))))
 
 (defn stop-bot!
   "if event channel is still open, waits for the bot thread to exit"
@@ -93,7 +100,7 @@
   component/Lifecycle
   (start [component]
     (log/info "starting responder")
-    (run-bot! component)
+    (run-messsage-handler-loop component)
     component)
   (stop [component]
     (log/info "stopping responder")
