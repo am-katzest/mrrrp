@@ -12,8 +12,7 @@
    :config {}
    :state {}}                           ; modifications are preserved
 
-(def terminators [(fn [context] (not-empty (:fx context)))
-                  (fn [context] (:stop context))])
+(def terminators [(fn [context] (not-empty (:fx context)))])
 
 (def fsm-repliers
   {:enter
@@ -46,7 +45,7 @@
 (def update-blacklist-interceptor
   {:enter
    (fn [{:keys [message] :as context}]
-     (let [stop-ctx (assoc context :stop true)]
+     (let [stop-ctx (chain/terminate context)]
       (case (:content message)
         "start meowing" (update-in stop-ctx [:state :blacklist] disj (:channel message))
         "stop meowing" (update-in stop-ctx [:state :blacklist] conj (:channel message))
@@ -55,16 +54,16 @@
 (def apply-blacklist-interceptor
   {:enter
    (fn [context]
-     (if (contains? (-> context :state :blacklist) (-> context :message :channel))
-       (assoc context :stop true)
-       context))})
+     (cond-> context
+       (contains? (-> context :state :blacklist) (-> context :message :channel))
+       chain/terminate))})
 
 (def ignore-self-interceptor
   {:enter
    (fn [context]
-     (if (= (-> context :message :author) (-> context :config :bot-id))
-       (assoc context :stop true)
-       context))})
+     (cond-> context
+       (= (-> context :message :author) (-> context :config :bot-id))
+       chain/terminate))})
 
 
 

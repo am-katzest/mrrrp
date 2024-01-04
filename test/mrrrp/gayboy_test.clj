@@ -34,25 +34,25 @@
                  :gayboy-channels))))
   (testing "applying"
     (testing "ignoring others"
-      (is (= true
+      (is (= nil
              (->>  (-> t/context-formatted
                        (update :state merge {:gayboy-channels #{"chan1"}})
                        (update :message merge {:author "other" :content "meow"}))
                    ((:enter s/ignore-gayboy-interceptor))
-                   :stop
+                   :io.pedestal.interceptor.chain/queue
                    ))))
     (testing "not ignoring others"
-      (is (= nil
+      (is (not= nil
              (->>  (-> t/context-formatted
                        (update :state merge {:gayboy-channels #{"other-channel"}})
                        (update :message merge {:author "other" :content "meow"}))
                    ((:enter s/ignore-gayboy-interceptor))
-                   :stop
+                   :io.pedestal.interceptor.chain/queue
                    ))))
-    (testing "ignoring gayboy" (is (= true
+    (testing "ignoring gayboy" (is (= nil
             (->>  (-> t/context-formatted
                       (update :state merge {:gayboy-channels #{"chan1"}})
                       (update :message merge {:author "gayboy" :content "meow"}))
                   ((:enter s/ignore-gayboy-interceptor))
-                  :stop
+                  :io.pedestal.interceptor.chain/queue
                   ))))))

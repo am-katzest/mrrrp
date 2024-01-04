@@ -47,6 +47,7 @@
                         :message {:author "user1"
                                   :channel "chan1"
                                   :content "meow!"}
+                        :io.pedestal.interceptor.chain/queue [:something :here]
                         :state s/initial-state
                         :config conf})
 
@@ -77,11 +78,11 @@
                    (assoc-in [:state :blacklist] #{"other"}))
                ((:enter s/apply-blacklist-interceptor))
                :stop)))
-    (is (= true
+    (is (nil?
            (->>  (-> context-formatted
                      (assoc-in [:state :blacklist] #{"chan1"}))
                  ((:enter s/apply-blacklist-interceptor))
-                 :stop)))))
+                 :io.pedestal.interceptor.chain/queue)))))
 
 (deftest msg-handler-test
   (binding  [meow/append-catface (fn [& x] (last x))]       ; just making the thing we are testing more predictable instead of stubbing, i know it's bad

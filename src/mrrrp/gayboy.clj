@@ -1,6 +1,7 @@
 (ns mrrrp.gayboy
   (:require
    [clojure.tools.logging :as log]
+   [io.pedestal.interceptor.chain :as chain]
    [mrrrp.meowperhonsion :as re]))
 
 ;; it's called yagpdb or something, but on one server it's named "gayboy" so i remember it as such
@@ -34,5 +35,5 @@
        (if (and (author-is-gayboy? context)
                 (> (-> config :gayboy :meowback-chance) (rand)))
          context
-         (assoc context :stop true))
+         (chain/terminate context))
        context))})
