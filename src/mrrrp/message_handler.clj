@@ -89,25 +89,6 @@
    interceptors))
 ;; (handle-message {} initial-state {})
 
-#_(defn handle-message-old
-    "takes state, config and message and returns updated state and fxs"
-    [{:keys [bot-id]} {:keys [blacklist]  :as state} {:keys [channel-id content author]}]
-    (b/cond
-      :do (println "aaa-" blacklist)
-      (= content "stop meowing") (stop-meowing channel-id)
-      (= content "start meowing") (start-meowing channel-id)
-      :when (not (blacklist channel-id))
-      :when (not= bot-id (:id author))
-      :do (g/maybe-update-gayboy-meowing-area (:id author) channel-id content)
-      :when (or (g/not-gayboy (:id author)) (> 0.1 (rand)))
-      :when  (not (and (g/gayboy-in-channel? channel-id)
-                       (g/is-gayboy-able-to-handle-this-message? content)))
-      [state
-       (->>
-        (prepare-event channel-id (:id author) content)
-        fsm/accept-message!
-        (map (partial add-fx-context channel-id)))]))
-
 (def initial-state {:blacklist #{}
                     :gayboy-channels #{}
                     :fsm-states repliers/repliers})
