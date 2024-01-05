@@ -24,7 +24,6 @@
               :meowback-chance 0.0}
    :rate-limit {:count 5
                 :period 60}
-   :admins ["admin"]
    :secrets {:meowken "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}})
 
 ;; (defn mrrrp-system [input output]

@@ -115,7 +115,6 @@
    [:gayboy [:map
              [:id [:set :string]]
              [:meowback-chance [:double {:min 0. :max 1.}]]]]
-   [:admins [:vector :string]]
    [:secrets [:map
               [:meowken [:string {:min 50 :max 100}]]]]])
 
