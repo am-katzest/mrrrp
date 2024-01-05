@@ -2,7 +2,7 @@
               :period 60}
  :gayboy {:id #{#name :gayboy}
           :meowback-chance 0.1}
- :secrets #include "MEOWKEN"
+ :secrets #include "test_meowken"
  ;; :rules [{
  ;;          ;; only-by
  ;;          :user "id"
