@@ -1,0 +1,23 @@
+{:rate-limit {:count 5
+              :period 60}
+ :gayboy {:id #{#name :gayboy}
+          :meowback-chance 0.1}
+ :secrets #include "MEOWKEN"
+ ;; :rules [{
+ ;;          ;; only-by
+ ;;          :user "id"
+ ;;          ;; only in
+ ;;          :channel "chan"
+ ;;          :server "serv"
+ ;;          ;; only containing
+ ;;          :regex #"meow"
+ ;;          ;; respond with
+ ;;          :do [[:response ""]]}
+ ;;         {
+ ;;          :user "id"
+ ;;          :server "serv"
+ ;;          ;; stop processing
+ ;;          :do [[:ignore-rule :meow]]
+ ;;          }]
+ ;;
+ }

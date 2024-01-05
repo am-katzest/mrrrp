@@ -73,3 +73,10 @@
                  ["someone" "meow"]]
                 (mht/in-channel "channel")
                 (run-messages-through config))))))
+
+(deftest config-reading-test
+  (is (= {:rate-limit {:count 5, :period 60},
+          :gayboy {:id #{"gayboy"}
+                   :meowback-chance 0.1},
+          :secrets {:meowken "MEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOW"}}
+         (read-config "test/defs.edn" "test/config.edn"))))

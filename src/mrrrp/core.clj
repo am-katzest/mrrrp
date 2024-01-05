@@ -118,9 +118,25 @@
    [:secrets [:map
               [:meowken [:string {:min 50 :max 100}]]]]])
 
-(defn read-config [conf-file]
+;; config requires a lot of hard to read, meaningless numbers
+(def defs-schema
+  [:map-of :keyword :any])
+
+(defmethod aero/reader 'name
+ [{:keys [defs] :as opts} tag value]
+  (defs value))
+
+
+(defn read-config [defs-file conf-file]
   (b/cond
-    :let [config (try (aero/read-config conf-file)
+    :let [defs (try (aero/read-config defs-file)
+                    (catch java.io.IOException _
+                      (throw (Exception. "couldn't read the defs file"))))]
+
+    (not (m/validate defs-schema defs))
+    (->> defs (m/explain conf-schema) me/humanize (str "improper config:\n") Exception. throw)
+
+    :let [config (try (aero/read-config conf-file {:defs defs})
                       (catch java.io.IOException _
                         (throw (Exception. "couldn't read the config file"))))]
 
