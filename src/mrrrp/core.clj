@@ -160,7 +160,7 @@
 
 (defn run-system! [args]
   (try
-    (let [config (read-config args)
+    (let [config (apply read-config args)
           system (mrrrp-system config)]
       (log/info "starting system...")
       (reset! running-system (.start system)))
@@ -169,8 +169,8 @@
       (binding [*out* *err*]
         (log/error "failed because:" (ex-message e))))))
 
-(defn -main [conf-file]
-  (run-system! conf-file))
+(defn -main [args]
+  (run-system! args))
 
 (comment
   (do (swap! running-system (fn [s] (when s (.stop s))))
