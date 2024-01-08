@@ -6,12 +6,12 @@
 (def rule1
   {:condition {:only-channels #{"chan" "other"}
                :only-authors #{"author"}
-               :text #"^meow$"}
+               :text "^meow$"}
    :action [:reply "reply"]})
 
 (def rule2
   {:condition {:only-servers #{"srv"}
-               :text #"^text$"}
+               :text "^text$"}
    :action [:reply "reply"]})
 
 (deftest rule-validation
@@ -28,20 +28,20 @@
 
 (deftest rule-predicate-test
   (testing "text"
-    (is (applies? context1 {:condition {:text #".*"}}))
-    (is (not (applies? context1 {:condition {:text #"wrong"}}))))
+    (is (applies? context1 {:condition {:text ".*"}}))
+    (is (not (applies? context1 {:condition {:text "wrong"}}))))
   (testing "server"
-    (is (applies? context1 {:condition {:text #".*" :only-servers #{"guild"}}}))
-    (is (not (applies? context1 {:condition {:text #".*" :only-servers #{"wrong"}}}))))
+    (is (applies? context1 {:condition {:text ".*" :only-servers #{"guild"}}}))
+    (is (not (applies? context1 {:condition {:text ".*" :only-servers #{"wrong"}}}))))
   (testing "channel"
-    (is (applies? context1 {:condition {:text #".*" :only-channels #{"chan"}}}))
-    (is (not (applies? context1 {:condition {:text #".*" :only-channels #{"wrong"}}}))))
+    (is (applies? context1 {:condition {:text ".*" :only-channels #{"chan"}}}))
+    (is (not (applies? context1 {:condition {:text ".*" :only-channels #{"wrong"}}}))))
   (testing "author"
-    (is (applies? context1 {:condition {:text #".*" :only-authors #{"author"}}}))
-    (is (not (applies? context1 {:condition {:text #".*" :only-authors #{"wrong"}}}))))
+    (is (applies? context1 {:condition {:text ".*" :only-authors #{"author"}}}))
+    (is (not (applies? context1 {:condition {:text ".*" :only-authors #{"wrong"}}}))))
   (testing  "mixed"
-    (is (applies? context1 {:condition {:text #".*" :only-authors #{"author" "other" "blah"} :only-channels #{"chan"}}}))
-    (is (not (applies? context1 {:condition {:text #".*" :only-servers #{"wrong"} :only-channels #{"chan"}}})))))
+    (is (applies? context1 {:condition {:text ".*" :only-authors #{"author" "other" "blah"} :only-channels #{"chan"}}}))
+    (is (not (applies? context1 {:condition {:text ".*" :only-servers #{"wrong"} :only-channels #{"chan"}}})))))
 
 (deftest rule-applying-test
   (is (= nil (actions context1 rule2)))

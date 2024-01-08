@@ -5,13 +5,10 @@
 (defn- str-set-limiter [name]
   [name {:optional true} [:set :string]])
 
-(defn regex? [thing]
-  (isa? (type thing) (key (first (m/class-schemas)))))
-
 (def condition-schema
   (m/schema
    [:map
-    [:text [:fn regex?]]
+    [:text :string]
     (str-set-limiter :only-channels)
     (str-set-limiter :only-authors)
     (str-set-limiter :only-servers)]))
@@ -29,7 +26,7 @@
               :only-channels (-> context :message :channel value)
               :only-authors (-> context :message :author value)
               :only-servers (-> context :event :guild-id value)
-              :text (->> context :message :content (re-matches value))))
+              :text (->> context :message :content (re-matches (re-pattern value)))))
           (:condition rule)))
 
 (defmulti action first)
