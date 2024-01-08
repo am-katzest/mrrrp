@@ -5,6 +5,7 @@
    [better-cond.core :as b]
    [clojure.core.async :as a :refer [chan close!]]
    [clojure.tools.logging :as log]
+   [mrrrp.rules :refer [rule-schema]]
    [com.stuartsierra.component :as component]
    [discljord.connections :as discord-ws]
    [discljord.messaging :as discord-rest]
@@ -108,22 +109,24 @@
     component))
 
 (def conf-schema
-  [:map
-   [:rate-limit [:map
-                 [:count pos-int?]
-                 [:period pos-int?]]]
-   [:gayboy [:map
-             [:id [:set :string]]
-             [:meowback-chance [:double {:min 0. :max 1.}]]]]
-   [:secrets [:map
-              [:meowken [:string {:min 50 :max 100}]]]]])
+  (m/schema
+   [:map
+    [:rules [:vector rule-schema]]
+    [:rate-limit [:map
+                  [:count pos-int?]
+                  [:period pos-int?]]]
+    [:gayboy [:map
+              [:id [:set :string]]
+              [:meowback-chance [:double {:min 0. :max 1.}]]]]
+    [:secrets [:map
+               [:meowken [:string {:min 50 :max 100}]]]]]))
 
 ;; config requires a lot of hard to read, meaningless numbers
 (def defs-schema
   [:map-of :keyword :any])
 
 (defmethod aero/reader 'name
- [{:keys [defs] :as opts} tag value]
+ [{:keys [defs] :as _opts} _tag value]
   (defs value))
 
 
@@ -175,3 +178,4 @@
 (comment
   (do (swap! running-system (fn [s] (when s (.stop s))))
       (run-system! "default_config.edn")))
+(read-config "example_defs.edn" "default_config.edn")

@@ -18,12 +18,16 @@
   (stop [component]
     (a/close! (:chan component))
     component))
+
 (def config
   {:bot-id "self"
    :gayboy {:id #{"gayboy"}
-              :meowback-chance 0.0}
+            :meowback-chance 0.0}
    :rate-limit {:count 5
                 :period 60}
+   :rules [{:condition {:only-channels #{"chan"}
+                        :text "^something$"}
+            :action [:reply "reply"]}]
    :secrets {:meowken "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}})
 
 ;; (defn mrrrp-system [input output]
@@ -74,8 +78,23 @@
                 (mht/in-channel "channel")
                 (run-messages-through config))))))
 
+(deftest rules-test
+  (is (= []
+         (->> [["someone" "something"]
+               ["someone" "wrong"]]
+              (mht/in-channel "channel")
+              (run-messages-through config))))
+  (is (= [{:type :reply :channel "chan" :text "reply"}]
+         (->> [["someone" "something"]
+               ["someone" "wrong"]]
+              (mht/in-channel "chan")
+              (run-messages-through config)))))
+
 (deftest config-reading-test
   (is (= {:rate-limit {:count 5, :period 60},
+          :rules [{:condition {:only-servers #{"srv"}
+                               :text "^something$"}
+                   :action [:reply "reply"]}]
           :gayboy {:id #{"gayboy"}
                    :meowback-chance 0.1},
           :secrets {:meowken "MEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOW"}}

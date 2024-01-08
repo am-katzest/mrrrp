@@ -5,6 +5,7 @@
             [mrrrp.repliers :as repliers]
             [io.pedestal.interceptor :as int]
             [io.pedestal.interceptor.chain :as chain]
+            [mrrrp.rules :as rules]
             [mrrrp.gayboy :as g]))
 
 ;; input context map:
@@ -74,6 +75,7 @@
                         apply-blacklist-interceptor
                         g/update-gayboy-interceptor
                         g/ignore-gayboy-interceptor
+                        rules/apply-rules-interceptor
                         fsm-repliers]
                        (map int/interceptor)))
 
