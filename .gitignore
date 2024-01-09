@@ -14,3 +14,5 @@ pom.xml.asc
 /.lsp/
 /config.edn
 /MEOWKEN
+own_config.edn
+own_defs.edn

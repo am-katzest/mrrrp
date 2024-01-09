@@ -6,11 +6,11 @@
             [clojure.test :refer :all]))
 
 (defrecord FakeConnection
-           [events]
-  component/Lifecycle
-  (stop [component]
-    (a/close! (:events component))
-    component))
+    [events]
+    component/Lifecycle
+    (stop [component]
+      (a/close! (:events component))
+      component))
 
 (defrecord FakeOutput
            [chan]
@@ -98,4 +98,12 @@
           :gayboy {:id #{"gayboy"}
                    :meowback-chance 0.1},
           :secrets {:meowken "MEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOWMEOW"}}
-         (read-config "test/defs.edn" "test/config.edn"))))
+         (read-config "test/defs.edn" "test/config.edn")))
+  (is (thrown? java.lang.Exception
+         (read-config "no_such_file.edn" "test/config.edn")))
+  (is (thrown? java.lang.Exception
+         (read-config "test/defs.edn" "no_such_file.edn"))))
+
+(deftest starting-fail-test
+  (is (thrown? java.lang.Exception (run-system! ["test/defs.edn"])))
+  (is (thrown? java.lang.Exception (run-system! ["wrong" "wrong"]))))

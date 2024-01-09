@@ -134,14 +134,14 @@
   (b/cond
     :let [defs (try (aero/read-config defs-file)
                     (catch java.io.IOException _
-                      (throw (Exception. "couldn't read the defs file"))))]
+                      (throw (Exception. (format "couldn't read the defs file (%s)" defs-file)))))]
 
     (not (m/validate defs-schema defs))
     (->> defs (m/explain conf-schema) me/humanize (str "improper config:\n") Exception. throw)
 
     :let [config (try (aero/read-config conf-file {:defs defs})
                       (catch java.io.IOException _
-                        (throw (Exception. "couldn't read the config file"))))]
+                        (throw (Exception. (format "couldn't read the config file (%s)" conf-file)))))]
 
     (not (m/validate conf-schema config))
     (->> config (m/explain conf-schema) me/humanize (str "improper config:\n") Exception. throw)
@@ -162,20 +162,25 @@
 (defonce running-system (atom nil))
 
 (defn run-system! [args]
-  (try
-    (let [config (apply read-config args)
-          system (mrrrp-system config)]
-      (log/info "starting system...")
-      (reset! running-system (.start system)))
-    (catch
-     Exception e
-      (binding [*out* *err*]
-        (log/error "failed because:" (ex-message e))))))
+  (when (not= 2 (count args))
+    (->> args
+         count
+         (format "wrong number of arguments, is %d (should be 2)")
+         Exception.
+         throw))
+  (let [config (apply read-config args)
+        system (mrrrp-system config)]
+    (log/info "starting system...")
+    (reset! running-system (.start system))))
 
-(defn -main [args]
-  (run-system! args))
+(defn -main [& args]
+  (try
+    (run-system! args)
+    (catch Throwable e
+        (log/error "failed because:" (ex-message e))
+        (System/exit 1))))
+
 
 (comment
   (do (swap! running-system (fn [s] (when s (.stop s))))
       (run-system! "default_config.edn")))
-(read-config "example_defs.edn" "default_config.edn")
