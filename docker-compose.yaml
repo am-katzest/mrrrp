@@ -1,0 +1,15 @@
+services:
+  bot:
+    image: mrrrp
+    build: ./
+    command: ["/defs.edn", "/conf.edn"]
+    volumes:
+      - type: bind
+        source: ${MRRRP_CONF:-./default_config.edn}
+        target: /conf.edn
+      - type: bind
+        source: ${MRRRP_DEFS:-./example_defs.edn}
+        target: /defs.edn
+      - type: bind
+        source: ${MEOWKEN:-./MEOWKEN}
+        target: /MEOWKEN
